@@ -1,0 +1,13 @@
+{
+  "projects": {
+    "default": "rnh-sync"
+  },
+  "targets": {
+    "rnh-sync": {
+      "hosting": {
+        "laptop": ["rnh-sync"],
+        "mobile": ["rnh-sync-mobile"]
+      }
+    }
+  }
+}

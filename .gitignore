@@ -1,0 +1,30 @@
+node_modules
+dist
+coverage
+*.local
+.DS_Store
+*.tsbuildinfo
+.env
+.env.*
+!.env.example
+
+# Firebase emulator artifacts
+.emulator-data
+.firebase/
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+
+# Temporary / scratch files
+.tmp_*
+*.tmp
+
+# Operator tooling secrets (never commit real user credentials or keys)
+tools/users.json
+*serviceAccount*.json
+*service-account*.json
+*-key.json
+serviceAccountKey.json
+
+# Firestore backups written by tools/migrate-v1-to-v2.mjs (contain user data)
+tools/backups/

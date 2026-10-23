@@ -1,0 +1,522 @@
+/*
+ * R&H Tyre Testing — Mobile PWA design system.
+ *
+ * Built for in-vehicle, sunlight-readable use: high-contrast surfaces, large
+ * touch targets, generous spacing and a mobile-first single-column layout.
+ * Palette is aligned to the app manifest (theme #0f172a) with a sky accent.
+ * All styling is className-based; component inline styles that the test suite
+ * relies on (e.g. rating-button min sizes) are intentionally left in place.
+ */
+
+:root {
+  /* Brand palette (slate + sky), tuned for high contrast in daylight. */
+  --color-bg: #0f172a;
+  --color-bg-2: #111c33;
+  --color-surface: #ffffff;
+  --color-surface-alt: #f1f5f9;
+  --color-surface-sunk: #e2e8f0;
+  --color-border: #cbd5e1;
+  --color-border-strong: #94a3b8;
+
+  --color-text: #0f172a;
+  --color-text-muted: #475569;
+  --color-text-faint: #64748b;
+  --color-on-dark: #f8fafc;
+  --color-on-dark-muted: #cbd5e1;
+
+  --color-accent: #0284c7;
+  --color-accent-strong: #0369a1;
+  --color-accent-contrast: #ffffff;
+  --color-accent-soft: #e0f2fe;
+
+  --color-success: #15803d;
+  --color-success-soft: #dcfce7;
+  --color-warning: #b45309;
+  --color-warning-soft: #fef3c7;
+  --color-danger: #b91c1c;
+
+  /* Typography scale (mobile-first, readable at arm's length). */
+  --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial,
+    sans-serif;
+  --text-xs: 0.8125rem;
+  --text-sm: 0.9375rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.375rem;
+  --text-2xl: 1.625rem;
+  --line-body: 1.5;
+
+  /* Spacing scale (4px base). */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-8: 3rem;
+
+  /* Radii + elevation. */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --shadow-card: 0 1px 2px rgba(15, 23, 42, 0.08),
+    0 4px 12px rgba(15, 23, 42, 0.06);
+  --shadow-bar: 0 2px 8px rgba(15, 23, 42, 0.25);
+
+  /* Controls. */
+  --control-height: 48px;
+  --content-max: 720px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  line-height: var(--line-body);
+  color: var(--color-text);
+  background:
+    radial-gradient(1200px 600px at 50% -10%, var(--color-bg-2), var(--color-bg))
+      fixed,
+    var(--color-bg);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+#root {
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+/* --- App shell ---------------------------------------------------------- */
+
+.app-main {
+  max-width: var(--content-max);
+  margin: 0 auto;
+  padding: var(--space-4) var(--space-4) var(--space-8);
+  padding-top: calc(env(safe-area-inset-top, 0px) + var(--space-4));
+}
+
+.app-title {
+  font-size: var(--text-2xl);
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--color-on-dark);
+  margin: var(--space-2) 0 var(--space-5);
+}
+
+.app-loading {
+  max-width: var(--content-max);
+  margin: 0 auto;
+  padding: var(--space-8) var(--space-4);
+  color: var(--color-on-dark-muted);
+  font-size: var(--text-lg);
+  text-align: center;
+}
+
+/* --- Capture form ------------------------------------------------------- */
+
+.capture-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+/* Sticky sync/save status bar. */
+.status-bar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin: 0 0 var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-bg-2);
+  color: var(--color-on-dark);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-bar);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.status-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-3);
+  border-radius: 999px;
+  line-height: 1.4;
+}
+
+.status-chip::before {
+  content: '';
+  width: 0.6rem;
+  height: 0.6rem;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.status-chip--synced {
+  background: var(--color-success-soft);
+  color: var(--color-success);
+}
+
+.status-chip--unsynced {
+  background: var(--color-warning-soft);
+  color: var(--color-warning);
+}
+
+.status-save {
+  color: var(--color-on-dark-muted);
+  font-weight: 500;
+}
+
+.status-save--done {
+  color: #7dd3fc;
+}
+
+/* App-level sync summary line (pending count / syncing / retry) near capture. */
+.sync-summary {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin: 0 0 var(--space-4);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--color-on-dark);
+}
+
+/* Customer template selector. */
+.template-picker__select {
+  width: 100%;
+  min-height: var(--control-height);
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--text-base);
+  font-family: inherit;
+  color: var(--color-text);
+  background: var(--color-surface);
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.template-picker__select:focus {
+  outline: none;
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px var(--color-accent-soft);
+}
+
+.template-picker__note {
+  margin: var(--space-3) 0 0;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--color-text-faint);
+  font-style: italic;
+}
+
+/* Section cards. */
+.card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  padding: var(--space-5);
+}
+
+.card__title {
+  font-size: var(--text-xl);
+  font-weight: 700;
+  color: var(--color-text);
+  margin: 0 0 var(--space-4);
+  letter-spacing: -0.01em;
+}
+
+.card__average {
+  margin: var(--space-4) 0 0;
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--color-surface-sunk);
+  font-size: var(--text-base);
+  color: var(--color-text-muted);
+}
+
+.card__average strong {
+  color: var(--color-text);
+  font-size: var(--text-lg);
+}
+
+/* Field layout. */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-4);
+}
+
+.field:last-child {
+  margin-bottom: 0;
+}
+
+.field input,
+.field textarea {
+  width: 100%;
+  min-height: var(--control-height);
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--text-base);
+  font-family: inherit;
+  color: var(--color-text);
+  background: var(--color-surface);
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.field textarea {
+  min-height: 88px;
+  resize: vertical;
+  line-height: var(--line-body);
+}
+
+/* Voice dictation toggle beside a note textarea (R5.5). */
+.dictate-btn {
+  align-self: flex-start;
+  margin-top: var(--space-2);
+  padding: 0 var(--space-4);
+}
+
+.dictate-btn--listening {
+  background: var(--color-accent);
+  color: var(--color-accent-contrast);
+  border-color: var(--color-accent-strong);
+}
+
+.field input:focus,
+.field textarea:focus {
+  outline: none;
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px var(--color-accent-soft);
+}
+
+/* Two-column grid on wider phones/tablets. */
+.field-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0 var(--space-4);
+}
+
+@media (min-width: 560px) {
+  .field-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* Tyre-set sub-cards. */
+.tyre-set {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-alt);
+  padding: var(--space-4);
+  margin: 0 0 var(--space-4);
+}
+
+.tyre-set__legend {
+  padding: 0 var(--space-2);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  color: var(--color-text);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* Buttons. */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: var(--control-height);
+  padding: 0 var(--space-5);
+  font-size: var(--text-base);
+  font-family: inherit;
+  font-weight: 600;
+  border-radius: var(--radius-sm);
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--color-accent-soft);
+}
+
+.btn--primary {
+  background: var(--color-accent);
+  color: var(--color-accent-contrast);
+}
+
+.btn--primary:hover {
+  background: var(--color-accent-strong);
+}
+
+.btn--primary:disabled {
+  background: var(--color-border-strong);
+  cursor: not-allowed;
+}
+
+.btn--secondary {
+  background: var(--color-surface);
+  color: var(--color-accent-strong);
+  border-color: var(--color-border-strong);
+}
+
+.btn--secondary:hover {
+  background: var(--color-surface-alt);
+}
+
+.btn--ghost-danger {
+  background: transparent;
+  color: var(--color-danger);
+  border-color: transparent;
+  min-height: var(--control-height);
+  padding: 0 var(--space-3);
+  align-self: flex-start;
+}
+
+.btn--ghost-danger:hover {
+  text-decoration: underline;
+}
+
+.btn--full {
+  width: 100%;
+}
+
+/* --- Rating control ----------------------------------------------------- */
+
+.rating {
+  margin: var(--space-4) 0;
+}
+
+.rating__readout {
+  margin: 0 0 var(--space-3);
+  font-size: var(--text-base);
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.rating__value {
+  color: var(--color-accent-strong);
+  font-size: var(--text-lg);
+  font-weight: 800;
+}
+
+.rating__hint {
+  margin-left: var(--space-2);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--color-text-faint);
+  font-style: italic;
+}
+
+.rating__grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.rating__btn {
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-base);
+  font-family: inherit;
+  color: var(--color-text);
+  background: var(--color-surface);
+  border: 2px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background 0.12s ease, border-color 0.12s ease,
+    color 0.12s ease;
+}
+
+.rating__btn:hover {
+  background: var(--color-surface-alt);
+}
+
+.rating__btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--color-accent-soft);
+}
+
+.rating__btn--selected {
+  background: var(--color-accent);
+  border-color: var(--color-accent-strong);
+  color: var(--color-accent-contrast);
+  font-weight: 800;
+}
+
+/* --- Auth screens ------------------------------------------------------- */
+
+.auth-screen {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-5);
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 420px;
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  padding: var(--space-6);
+}
+
+.auth-card__title {
+  font-size: var(--text-2xl);
+  font-weight: 800;
+  color: var(--color-text);
+  margin: 0 0 var(--space-2);
+}
+
+.auth-card__subtitle {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  margin: 0 0 var(--space-5);
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.auth-error {
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-sm);
+  background: #fef2f2;
+  color: var(--color-danger);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.auth-note {
+  font-size: var(--text-base);
+  color: var(--color-text-muted);
+  margin: 0 0 var(--space-5);
+}

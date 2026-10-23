@@ -1,0 +1,196 @@
+rules_version = '2';
+
+// Firestore security rules for the R&H Tyre Testing System.
+//
+// Role model (design.md > Data Models > users/{uid}):
+//   The authenticated user's single role is stored in the `role` field of
+//   their `users/{uid}` document, one of 'Tester' | 'Report_Viewer'.
+//
+// Access matrix (Requirements 1.4, 1.5, 1.6 / Property 2):
+//   - Unauthenticated users are denied every collection (only sign-in is
+//     reachable in the apps).
+//   - Testers may create/read/update their OWN Test_Sessions (createdBy ==
+//     uid) but may NOT write Customer_Templates or Field_Mappings.
+//   - Report_Viewers may read Test_Sessions and manage (read/write)
+//     Customer_Templates and their Field_Mappings, and may delete
+//     Test_Sessions (Requirements 10.5, 10.6).
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // --- Helpers -----------------------------------------------------------
+    // v2 role model: `roles: Role[]` on users/{uid} (one user may hold several
+    // roles, R1.3). The legacy single `role` field is still honoured so v1
+    // accounts keep working until they are migrated (tools/migrate-v1-to-v2).
+    // No Cloud Functions: everything is enforced here (R14.1).
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function userDoc() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function hasUserDoc() {
+      return exists(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+
+    function hasRole(r) {
+      return isSignedIn() && hasUserDoc() && (
+        (userDoc().get('roles', []) is list && r in userDoc().get('roles', []))
+        || userDoc().get('role', '') == r
+      );
+    }
+
+    function isTester() { return hasRole('Tester'); }
+    function isReportViewer() { return hasRole('Report_Viewer'); }
+    // Legacy v1 Report_Viewers (single `role`, no `roles` list) managed
+    // templates; keep that until they are re-seeded (matches rolesFromDoc).
+    function isLegacyViewer() {
+      return isSignedIn() && hasUserDoc()
+        && !(userDoc().get('roles', null) is list)
+        && userDoc().get('role', '') == 'Report_Viewer';
+    }
+    function isTemplateAdmin() { return hasRole('Template_Admin') || isLegacyViewer(); }
+    function hasAnyRole() { return isTester() || isReportViewer() || isTemplateAdmin(); }
+
+    // 30-day trash window (R13.2); deletedAt is epoch ms.
+    function trashExpired(data) {
+      return data.get('deletedAt', null) is number
+        && request.time.toMillis() - data.deletedAt > 30 * 24 * 60 * 60 * 1000;
+    }
+
+    // Tester may edit sessions they created or are assigned to (R14.2).
+    function testerOwns(data) {
+      return data.createdBy == request.auth.uid
+        || (data.get('assignedTo', []) is list && request.auth.uid in data.get('assignedTo', []));
+    }
+
+    // --- users/{uid} -------------------------------------------------------
+    // Read own profile. Self-registration may create the OWN doc once with a
+    // single self-service role (Tester or Report_Viewer). Template_Admin and
+    // multi-role grants come only from tools/seed-users.mjs (Admin SDK).
+    // Nobody can change their own roles afterwards (R14.4).
+    match /users/{uid} {
+      // Own profile; Report_Viewers may also list the team to assign testers.
+      allow read: if isSignedIn() && (request.auth.uid == uid || isReportViewer());
+      allow create: if isSignedIn()
+        && request.auth.uid == uid
+        && request.resource.data.uid == uid
+        && (
+          // Mobile registers ['Tester']; laptop registers
+          // ['Report_Viewer', 'Template_Admin'] (same power v1 gave Report_
+          // Viewers). Tighten by seeding users and disabling self-sign-up.
+          (request.resource.data.get('roles', null) is list
+            && request.resource.data.roles.size() >= 1
+            && request.resource.data.roles.size() <= 2
+            && request.resource.data.roles.hasOnly(['Tester', 'Report_Viewer', 'Template_Admin']))
+          || request.resource.data.get('role', '') in ['Tester', 'Report_Viewer']
+        );
+      // The only self-service change: an existing account may add the Tester
+      // role to itself (so an office account can also capture on the phone).
+      // Tester is the lowest role and self-sign-up already grants it, so this
+      // is not an escalation. Every other field and every other role is fixed.
+      allow update: if isSignedIn()
+        && request.auth.uid == uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['roles'])
+        && resource.data.get('roles', null) is list
+        && !('Tester' in resource.data.roles)
+        && request.resource.data.roles is list
+        && request.resource.data.roles.hasAll(resource.data.roles)
+        && request.resource.data.roles.size() == resource.data.roles.size() + 1
+        && 'Tester' in request.resource.data.roles;
+      allow delete: if false;
+    }
+
+    // --- customerTemplates/{templateId} -----------------------------------
+    // Everyone with a role may read (Testers need the list + published
+    // versions offline, R8.4). Only Template_Admins write (R14.3). Report_
+    // Viewers keep v1 write access until the v1 laptop screens are removed.
+    match /customerTemplates/{templateId} {
+      allow read: if hasAnyRole();
+      allow create, update: if isTemplateAdmin() || isReportViewer();
+      allow delete: if isTemplateAdmin();
+
+      // Published Template_Versions are immutable for everyone (R2.4, R14.3).
+      match /versions/{version} {
+        allow read: if hasAnyRole();
+        allow create: if isTemplateAdmin()
+          && request.resource.data.templateId == templateId;
+        allow update, delete: if false;
+      }
+
+      // Binary Excel workbooks stored in Firestore (replaces Cloud Storage).
+      match /blobs/{blobId} {
+        allow read: if hasAnyRole();
+        allow write: if isTemplateAdmin() || isReportViewer();
+
+        match /chunks/{chunkId} {
+          allow read: if hasAnyRole();
+          allow write: if isTemplateAdmin() || isReportViewer();
+        }
+      }
+
+      // v1 Field_Mappings (legacy, removed with the v1 screens).
+      match /fieldMappings/{mappingId} {
+        allow read: if hasAnyRole();
+        allow write: if isTemplateAdmin() || isReportViewer();
+      }
+    }
+
+    // --- testSessions/{sessionId} -----------------------------------------
+    match /testSessions/{sessionId} {
+      allow read: if hasAnyRole();
+
+      // Tester creates a session they own (R14.2).
+      allow create: if isTester()
+        && request.resource.data.createdBy == request.auth.uid;
+
+      // Tester edits own / assigned sessions; Report_Viewer edits any
+      // (review + correction, trash, restore). Owner can never be changed.
+      allow update: if request.resource.data.createdBy == resource.data.createdBy
+        && (
+          // Testers can never change who a test is assigned to.
+          (isTester() && testerOwns(resource.data)
+            && request.resource.data.get('assignedTo', []) == resource.data.get('assignedTo', []))
+          || isReportViewer()
+        );
+
+      // Permanent delete only from the trash after 30 days (R13.2). v1
+      // sessions (no deletedAt field) may still be deleted directly.
+      allow delete: if isReportViewer()
+        && (trashExpired(resource.data) || !('deletedAt' in resource.data));
+
+      // Append-only edit history (R10.4).
+      match /history/{entryId} {
+        allow read: if hasAnyRole();
+        allow create: if (isTester() || isReportViewer())
+          && request.resource.data.by == request.auth.uid;
+        allow update, delete: if false;
+      }
+
+      // Tyre photos stored in Firestore (replaces Cloud Storage).
+      match /photos/{photoId} {
+        allow read: if hasAnyRole();
+        allow write: if isTester() || isReportViewer();
+
+        match /chunks/{chunkId} {
+          allow read: if hasAnyRole();
+          allow write: if isTester() || isReportViewer();
+        }
+      }
+    }
+
+    // Alternate alias for tyre photos: sessions/{sessionId}/photos/{photoId}
+    match /sessions/{sessionId}/photos/{photoId} {
+      allow read: if hasAnyRole();
+      allow write: if isTester() || isReportViewer();
+
+      match /chunks/{chunkId} {
+        allow read: if hasAnyRole();
+        allow write: if isTester() || isReportViewer();
+      }
+    }
+  }
+}
+

@@ -1,0 +1,50 @@
+{
+  "name": "rnh-tyre-testing-system",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "packages/shared",
+    "apps/mobile-pwa",
+    "apps/laptop-web"
+  ],
+  "scripts": {
+    "build": "tsc --build",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint . --ext .ts,.tsx",
+    "format": "prettier --write \"**/*.{ts,tsx,json,css,md}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,json,css,md}\"",
+    "dev:mobile": "npm run dev --workspace apps/mobile-pwa",
+    "dev:laptop": "npm run dev --workspace apps/laptop-web",
+    "seed:users": "node tools/seed-users.mjs",
+    "migrate:v2": "node tools/migrate-v1-to-v2.mjs",
+    "deploy:rules": "firebase deploy --only firestore:rules,firestore:indexes,storage",
+    "build:apps": "vite build apps/mobile-pwa && vite build apps/laptop-web",
+    "deploy:hosting": "npm run build:apps && firebase deploy --only hosting",
+    "deploy:all": "npm run build:apps && firebase deploy --only firestore:rules,firestore:indexes,storage,hosting",
+    "emulators": "firebase emulators:start --only auth,firestore,storage",
+    "emulators:export": "firebase emulators:start --only auth,firestore,storage --import ./.emulator-data --export-on-exit ./.emulator-data",
+    "test:rules": "vitest run --config tests/security-rules/vitest.config.ts",
+    "test:rules:emulated": "firebase emulators:exec --only firestore,storage \"vitest run --config tests/security-rules/vitest.config.ts\""
+  },
+  "devDependencies": {
+    "@firebase/rules-unit-testing": "^3.0.4",
+    "@types/node": "^22.10.2",
+    "@typescript-eslint/eslint-plugin": "^8.18.2",
+    "@typescript-eslint/parser": "^8.18.2",
+    "@vitejs/plugin-react": "^4.3.4",
+    "eslint": "^8.57.1",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-react-hooks": "^4.6.2",
+    "eslint-plugin-react-refresh": "^0.4.16",
+    "fast-check": "^3.23.2",
+    "firebase-admin": "^13.0.2",
+    "firebase-tools": "^13.29.1",
+    "jsdom": "^25.0.1",
+    "prettier": "^3.4.2",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.5",
+    "vitest": "^2.1.8"
+  }
+}

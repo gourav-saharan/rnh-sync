@@ -1,0 +1,995 @@
+{
+  "pbtResults": {
+    "5.2 Write property test for local persistence round-trip": {
+      "status": "passed",
+      "lastRunTimestamp": 1790614649656
+    },
+    "6.3 Write property test for category average derivation": {
+      "status": "passed",
+      "lastRunTimestamp": 1790614650952
+    },
+    "6.2 Write property test for rating validation": {
+      "status": "passed",
+      "lastRunTimestamp": 1790614678712
+    },
+    "7.2 Write property test for template structure extraction fidelity": {
+      "status": "passed",
+      "lastRunTimestamp": 1790615150626
+    },
+    "3.3 Write property test for role-based access control": {
+      "status": "passed",
+      "lastRunTimestamp": 1790616650368
+    },
+    "7.4 Write property test for mapping conflict handling": {
+      "status": "passed",
+      "lastRunTimestamp": 1790616698804
+    },
+    "8.3 Write property test for mapping save/load round-trip": {
+      "status": "passed",
+      "lastRunTimestamp": 1790647994649
+    },
+    "10.2 Write property test for mapped cells written across all sheets": {
+      "status": "passed",
+      "lastRunTimestamp": 1790648400652
+    },
+    "10.4 Write property test for output structural fidelity": {
+      "status": "passed",
+      "lastRunTimestamp": 1790648436781
+    },
+    "10.3 Write property test for unmapped cell preservation": {
+      "status": "passed",
+      "lastRunTimestamp": 1790648648366
+    },
+    "10.9 Write property test for download filename format": {
+      "status": "passed",
+      "lastRunTimestamp": 1790649103559
+    },
+    "12.3 Write property test for R&H_Parameter set selection": {
+      "status": "passed",
+      "lastRunTimestamp": 1790649119940
+    },
+    "10.7 Write property test for generated workbook re-parse validity": {
+      "status": "passed",
+      "lastRunTimestamp": 1790649179617
+    },
+    "10.6 Write property test for missing required fields reporting": {
+      "status": "passed",
+      "lastRunTimestamp": 1790649205269
+    },
+    "14.4 Write property test for per-field conflict merge": {
+      "status": "passed",
+      "lastRunTimestamp": 1790650166542
+    },
+    "14.5 Write property test for sync-status invariant": {
+      "status": "passed",
+      "lastRunTimestamp": 1790650205480
+    },
+    "14.3 Write property test for failed sync retains and retries": {
+      "status": "passed",
+      "lastRunTimestamp": 1790650313030
+    }
+  },
+  "executionHistory": {
+    "1.1 Initialize monorepo and app scaffolding": [
+      {
+        "executionId": "f136a444-a39f-4898-a663-b9cf86dd69b1",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790611525058
+      },
+      {
+        "executionId": "f136a444-a39f-4898-a663-b9cf86dd69b1",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790611549505
+      },
+      {
+        "executionId": "f136a444-a39f-4898-a663-b9cf86dd69b1",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790612851364
+      }
+    ],
+    "1.2 Define shared TypeScript domain models and constants": [
+      {
+        "executionId": "f136a444-a39f-4898-a663-b9cf86dd69b1",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790611526213
+      },
+      {
+        "executionId": "f136a444-a39f-4898-a663-b9cf86dd69b1",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790612860797
+      },
+      {
+        "executionId": "f136a444-a39f-4898-a663-b9cf86dd69b1",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790613958734
+      }
+    ],
+    "2.1 Set up Firebase project config and Emulator Suite": [
+      {
+        "executionId": "f136a444-a39f-4898-a663-b9cf86dd69b1",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790611526320
+      },
+      {
+        "executionId": "f136a444-a39f-4898-a663-b9cf86dd69b1",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790612861788
+      },
+      {
+        "executionId": "f136a444-a39f-4898-a663-b9cf86dd69b1",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790613959304
+      }
+    ],
+    "2.2 Author Firestore and Storage security rules for role-based access": [
+      {
+        "executionId": "f136a444-a39f-4898-a663-b9cf86dd69b1",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790611526437
+      },
+      {
+        "executionId": "f136a444-a39f-4898-a663-b9cf86dd69b1",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790613971953
+      },
+      {
+        "executionId": "f136a444-a39f-4898-a663-b9cf86dd69b1",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790614466791
+      }
+    ],
+    "2.3 Write security-rules tests against the emulator": [
+      {
+        "executionId": "f136a444-a39f-4898-a663-b9cf86dd69b1",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790611526538
+      },
+      {
+        "executionId": "f136a444-a39f-4898-a663-b9cf86dd69b1",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790614990976
+      },
+      {
+        "executionId": "f136a444-a39f-4898-a663-b9cf86dd69b1",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790616489213
+      }
+    ],
+    "3.1 Implement Auth_Service wrapper and role resolution": [
+      {
+        "executionId": "f136a444-a39f-4898-a663-b9cf86dd69b1",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790611526611
+      },
+      {
+        "executionId": "f136a444-a39f-4898-a663-b9cf86dd69b1",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790614482062
+      },
+      {
+        "executionId": "f136a444-a39f-4898-a663-b9cf86dd69b1",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790614963320
+      }
+    ],
+    "3.2 Write property test for exactly-one-role": [
+      {
+        "executionId": "f136a444-a39f-4898-a663-b9cf86dd69b1",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790611526685
+      },
+      {
+        "executionId": "f136a444-a39f-4898-a663-b9cf86dd69b1",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790616504544
+      },
+      {
+        "executionId": "a0051fa8-b825-46cc-a269-dd0a75e1a5f7",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790647485015
+      }
+    ],
+    "3.3 Write property test for role-based access control": [
+      {
+        "executionId": "f136a444-a39f-4898-a663-b9cf86dd69b1",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790611526742
+      },
+      {
+        "executionId": "f136a444-a39f-4898-a663-b9cf86dd69b1",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790616505646
+      },
+      {
+        "executionId": "a0051fa8-b825-46cc-a269-dd0a75e1a5f7",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790647486372
+      }
+    ],
+    "3.4 Write unit and integration tests for auth flows": [
+      {
+        "executionId": "f136a444-a39f-4898-a663-b9cf86dd69b1",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790611526811
+      },
+      {
+        "executionId": "a0051fa8-b825-46cc-a269-dd0a75e1a5f7",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790647507135
+      },
+      {
+        "executionId": "a0051fa8-b825-46cc-a269-dd0a75e1a5f7",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790647840597
+      }
+    ],
+    "4. Checkpoint - foundation and auth": [
+      {
+        "executionId": "f136a444-a39f-4898-a663-b9cf86dd69b1",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790611526888
+      },
+      {
+        "executionId": "a0051fa8-b825-46cc-a269-dd0a75e1a5f7",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790651342033
+      }
+    ],
+    "5.1 Implement the `localSessions` IndexedDB store": [
+      {
+        "executionId": "f136a444-a39f-4898-a663-b9cf86dd69b1",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790611526968
+      },
+      {
+        "executionId": "f136a444-a39f-4898-a663-b9cf86dd69b1",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790613972786
+      },
+      {
+        "executionId": "f136a444-a39f-4898-a663-b9cf86dd69b1",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790614467614
+      }
+    ],
+    "5.2 Write property test for local persistence round-trip": [
+      {
+        "executionId": "f136a444-a39f-4898-a663-b9cf86dd69b1",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790611527044
+      },
+      {
+        "executionId": "f136a444-a39f-4898-a663-b9cf86dd69b1",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790614484889
+      },
+      {
+        "executionId": "f136a444-a39f-4898-a663-b9cf86dd69b1",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790614968208
+      }
+    ],
+    "6.1 Implement rating validation and category-average derivation": [
+      {
+        "executionId": "f136a444-a39f-4898-a663-b9cf86dd69b1",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790611527109
+      },
+      {
+        "executionId": "f136a444-a39f-4898-a663-b9cf86dd69b1",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790613973606
+      },
+      {
+        "executionId": "f136a444-a39f-4898-a663-b9cf86dd69b1",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790614468981
+      }
+    ],
+    "6.2 Write property test for rating validation": [
+      {
+        "executionId": "f136a444-a39f-4898-a663-b9cf86dd69b1",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790611527184
+      },
+      {
+        "executionId": "f136a444-a39f-4898-a663-b9cf86dd69b1",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790614485774
+      },
+      {
+        "executionId": "f136a444-a39f-4898-a663-b9cf86dd69b1",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790614966068
+      }
+    ],
+    "6.3 Write property test for category average derivation": [
+      {
+        "executionId": "f136a444-a39f-4898-a663-b9cf86dd69b1",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790611527243
+      },
+      {
+        "executionId": "f136a444-a39f-4898-a663-b9cf86dd69b1",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790614486769
+      },
+      {
+        "executionId": "f136a444-a39f-4898-a663-b9cf86dd69b1",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790614966948
+      }
+    ],
+    "7.1 Implement template structure extraction with ExcelJS": [
+      {
+        "executionId": "f136a444-a39f-4898-a663-b9cf86dd69b1",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790611527317
+      },
+      {
+        "executionId": "f136a444-a39f-4898-a663-b9cf86dd69b1",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790613974339
+      },
+      {
+        "executionId": "f136a444-a39f-4898-a663-b9cf86dd69b1",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790614470136
+      }
+    ],
+    "7.2 Write property test for template structure extraction fidelity": [
+      {
+        "executionId": "f136a444-a39f-4898-a663-b9cf86dd69b1",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790611527376
+      },
+      {
+        "executionId": "f136a444-a39f-4898-a663-b9cf86dd69b1",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790614992037
+      },
+      {
+        "executionId": "f136a444-a39f-4898-a663-b9cf86dd69b1",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790616489644
+      }
+    ],
+    "7.3 Implement Field_Mapping creation, conflict detection, and merge-anchor resolution": [
+      {
+        "executionId": "f136a444-a39f-4898-a663-b9cf86dd69b1",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790611527450
+      },
+      {
+        "executionId": "f136a444-a39f-4898-a663-b9cf86dd69b1",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790614483863
+      },
+      {
+        "executionId": "f136a444-a39f-4898-a663-b9cf86dd69b1",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790614964743
+      }
+    ],
+    "7.4 Write property test for mapping conflict handling": [
+      {
+        "executionId": "f136a444-a39f-4898-a663-b9cf86dd69b1",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790611527510
+      },
+      {
+        "executionId": "f136a444-a39f-4898-a663-b9cf86dd69b1",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790616503239
+      },
+      {
+        "executionId": "a0051fa8-b825-46cc-a269-dd0a75e1a5f7",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790647487370
+      }
+    ],
+    "8.1 Implement Template_Manager persistence (Firestore + Cloud Storage)": [
+      {
+        "executionId": "f136a444-a39f-4898-a663-b9cf86dd69b1",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790611527591
+      },
+      {
+        "executionId": "f136a444-a39f-4898-a663-b9cf86dd69b1",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790616500789
+      },
+      {
+        "executionId": "a0051fa8-b825-46cc-a269-dd0a75e1a5f7",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790647488698
+      }
+    ],
+    "8.2 Implement Mapping_Editor persistence with conflict-aware save/load": [
+      {
+        "executionId": "f136a444-a39f-4898-a663-b9cf86dd69b1",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790611527684
+      },
+      {
+        "executionId": "f136a444-a39f-4898-a663-b9cf86dd69b1",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790616502213
+      },
+      {
+        "executionId": "a0051fa8-b825-46cc-a269-dd0a75e1a5f7",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790647489995
+      }
+    ],
+    "8.3 Write property test for mapping save/load round-trip": [
+      {
+        "executionId": "f136a444-a39f-4898-a663-b9cf86dd69b1",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790611527745
+      },
+      {
+        "executionId": "a0051fa8-b825-46cc-a269-dd0a75e1a5f7",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790647847504
+      },
+      {
+        "executionId": "a0051fa8-b825-46cc-a269-dd0a75e1a5f7",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790648183065
+      }
+    ],
+    "8.4 Write unit and integration tests for Template_Manager": [
+      {
+        "executionId": "f136a444-a39f-4898-a663-b9cf86dd69b1",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790611527835
+      },
+      {
+        "executionId": "a0051fa8-b825-46cc-a269-dd0a75e1a5f7",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790647848447
+      },
+      {
+        "executionId": "a0051fa8-b825-46cc-a269-dd0a75e1a5f7",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790648183965
+      }
+    ],
+    "9. Checkpoint - persistence and template/mapping engine": [
+      {
+        "executionId": "f136a444-a39f-4898-a663-b9cf86dd69b1",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790611527926
+      },
+      {
+        "executionId": "a0051fa8-b825-46cc-a269-dd0a75e1a5f7",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790651621235
+      }
+    ],
+    "10.1 Implement workbook load and mapped-cell writing across sheets": [
+      {
+        "executionId": "f136a444-a39f-4898-a663-b9cf86dd69b1",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790611528004
+      },
+      {
+        "executionId": "a0051fa8-b825-46cc-a269-dd0a75e1a5f7",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790647849842
+      },
+      {
+        "executionId": "a0051fa8-b825-46cc-a269-dd0a75e1a5f7",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790648185387
+      }
+    ],
+    "10.2 Write property test for mapped cells written across all sheets": [
+      {
+        "executionId": "f136a444-a39f-4898-a663-b9cf86dd69b1",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790611528087
+      },
+      {
+        "executionId": "a0051fa8-b825-46cc-a269-dd0a75e1a5f7",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790648196867
+      },
+      {
+        "executionId": "a0051fa8-b825-46cc-a269-dd0a75e1a5f7",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790648670836
+      }
+    ],
+    "10.3 Write property test for unmapped cell preservation": [
+      {
+        "executionId": "f136a444-a39f-4898-a663-b9cf86dd69b1",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790611528178
+      },
+      {
+        "executionId": "a0051fa8-b825-46cc-a269-dd0a75e1a5f7",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790648198266
+      },
+      {
+        "executionId": "a0051fa8-b825-46cc-a269-dd0a75e1a5f7",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790648672193
+      }
+    ],
+    "10.4 Write property test for output structural fidelity": [
+      {
+        "executionId": "f136a444-a39f-4898-a663-b9cf86dd69b1",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790611528260
+      },
+      {
+        "executionId": "a0051fa8-b825-46cc-a269-dd0a75e1a5f7",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790648199151
+      },
+      {
+        "executionId": "a0051fa8-b825-46cc-a269-dd0a75e1a5f7",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790648669894
+      }
+    ],
+    "10.5 Implement missing-required-field reporting and workbook serialization": [
+      {
+        "executionId": "f136a444-a39f-4898-a663-b9cf86dd69b1",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790611528340
+      },
+      {
+        "executionId": "a0051fa8-b825-46cc-a269-dd0a75e1a5f7",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790648195933
+      },
+      {
+        "executionId": "a0051fa8-b825-46cc-a269-dd0a75e1a5f7",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790648673601
+      }
+    ],
+    "10.6 Write property test for missing required fields reporting": [
+      {
+        "executionId": "f136a444-a39f-4898-a663-b9cf86dd69b1",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790611528426
+      },
+      {
+        "executionId": "a0051fa8-b825-46cc-a269-dd0a75e1a5f7",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790648983779
+      },
+      {
+        "executionId": "a0051fa8-b825-46cc-a269-dd0a75e1a5f7",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790649583062
+      }
+    ],
+    "10.7 Write property test for generated workbook re-parse validity": [
+      {
+        "executionId": "f136a444-a39f-4898-a663-b9cf86dd69b1",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790611528506
+      },
+      {
+        "executionId": "a0051fa8-b825-46cc-a269-dd0a75e1a5f7",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790648985087
+      },
+      {
+        "executionId": "a0051fa8-b825-46cc-a269-dd0a75e1a5f7",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790649579676
+      }
+    ],
+    "10.8 Implement suggested filename and report preview": [
+      {
+        "executionId": "f136a444-a39f-4898-a663-b9cf86dd69b1",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790611528600
+      },
+      {
+        "executionId": "a0051fa8-b825-46cc-a269-dd0a75e1a5f7",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790648686640
+      },
+      {
+        "executionId": "a0051fa8-b825-46cc-a269-dd0a75e1a5f7",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790648975295
+      }
+    ],
+    "10.9 Write property test for download filename format": [
+      {
+        "executionId": "f136a444-a39f-4898-a663-b9cf86dd69b1",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790611528692
+      },
+      {
+        "executionId": "a0051fa8-b825-46cc-a269-dd0a75e1a5f7",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790648986047
+      },
+      {
+        "executionId": "a0051fa8-b825-46cc-a269-dd0a75e1a5f7",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790649578355
+      }
+    ],
+    "11. Checkpoint - report generation pipeline": [
+      {
+        "executionId": "f136a444-a39f-4898-a663-b9cf86dd69b1",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790611528777
+      },
+      {
+        "executionId": "a0051fa8-b825-46cc-a269-dd0a75e1a5f7",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790651841289
+      }
+    ],
+    "12.1 Build the Test_Session capture UI with single-tap ratings and autosave": [
+      {
+        "executionId": "f136a444-a39f-4898-a663-b9cf86dd69b1",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790611528857
+      },
+      {
+        "executionId": "a0051fa8-b825-46cc-a269-dd0a75e1a5f7",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790648194530
+      },
+      {
+        "executionId": "a0051fa8-b825-46cc-a269-dd0a75e1a5f7",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790648674629
+      }
+    ],
+    "12.2 Implement R&H_Parameter set selection from template mappings": [
+      {
+        "executionId": "f136a444-a39f-4898-a663-b9cf86dd69b1",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790611528951
+      },
+      {
+        "executionId": "a0051fa8-b825-46cc-a269-dd0a75e1a5f7",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790647851231
+      },
+      {
+        "executionId": "a0051fa8-b825-46cc-a269-dd0a75e1a5f7",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790648186819
+      }
+    ],
+    "12.3 Write property test for R&H_Parameter set selection": [
+      {
+        "executionId": "f136a444-a39f-4898-a663-b9cf86dd69b1",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790611529041
+      },
+      {
+        "executionId": "a0051fa8-b825-46cc-a269-dd0a75e1a5f7",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790648987429
+      },
+      {
+        "executionId": "a0051fa8-b825-46cc-a269-dd0a75e1a5f7",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790649581093
+      }
+    ],
+    "12.4 Write UI and unit tests for capture controls": [
+      {
+        "executionId": "f136a444-a39f-4898-a663-b9cf86dd69b1",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790611529121
+      },
+      {
+        "executionId": "a0051fa8-b825-46cc-a269-dd0a75e1a5f7",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790649589711
+      },
+      {
+        "executionId": "a0051fa8-b825-46cc-a269-dd0a75e1a5f7",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790650015109
+      }
+    ],
+    "13.1 Add Web App Manifest and Workbox service worker": [
+      {
+        "executionId": "f136a444-a39f-4898-a663-b9cf86dd69b1",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790611529220
+      },
+      {
+        "executionId": "a0051fa8-b825-46cc-a269-dd0a75e1a5f7",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790647852030
+      },
+      {
+        "executionId": "a0051fa8-b825-46cc-a269-dd0a75e1a5f7",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790648187782
+      }
+    ],
+    "13.2 Write smoke tests for PWA configuration": [
+      {
+        "executionId": "f136a444-a39f-4898-a663-b9cf86dd69b1",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790611529329
+      },
+      {
+        "executionId": "a0051fa8-b825-46cc-a269-dd0a75e1a5f7",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790648687366
+      },
+      {
+        "executionId": "a0051fa8-b825-46cc-a269-dd0a75e1a5f7",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790648976362
+      }
+    ],
+    "14.1 Implement local-first sync with retry and status tracking": [
+      {
+        "executionId": "f136a444-a39f-4898-a663-b9cf86dd69b1",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790611529433
+      },
+      {
+        "executionId": "a0051fa8-b825-46cc-a269-dd0a75e1a5f7",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790648989537
+      },
+      {
+        "executionId": "a0051fa8-b825-46cc-a269-dd0a75e1a5f7",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790649582049
+      }
+    ],
+    "14.2 Implement per-field, latest-server-timestamp conflict merge with note preservation": [
+      {
+        "executionId": "f136a444-a39f-4898-a663-b9cf86dd69b1",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790611529511
+      },
+      {
+        "executionId": "a0051fa8-b825-46cc-a269-dd0a75e1a5f7",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790649590603
+      },
+      {
+        "executionId": "a0051fa8-b825-46cc-a269-dd0a75e1a5f7",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790650015926
+      }
+    ],
+    "14.3 Write property test for failed sync retains and retries": [
+      {
+        "executionId": "f136a444-a39f-4898-a663-b9cf86dd69b1",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790611529599
+      },
+      {
+        "executionId": "a0051fa8-b825-46cc-a269-dd0a75e1a5f7",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790650023647
+      },
+      {
+        "executionId": "a0051fa8-b825-46cc-a269-dd0a75e1a5f7",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790650348116
+      }
+    ],
+    "14.4 Write property test for per-field conflict merge": [
+      {
+        "executionId": "f136a444-a39f-4898-a663-b9cf86dd69b1",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790611529685
+      },
+      {
+        "executionId": "a0051fa8-b825-46cc-a269-dd0a75e1a5f7",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790650022658
+      },
+      {
+        "executionId": "a0051fa8-b825-46cc-a269-dd0a75e1a5f7",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790650349578
+      }
+    ],
+    "14.5 Write property test for sync-status invariant": [
+      {
+        "executionId": "f136a444-a39f-4898-a663-b9cf86dd69b1",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790611529777
+      },
+      {
+        "executionId": "a0051fa8-b825-46cc-a269-dd0a75e1a5f7",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790650025004
+      },
+      {
+        "executionId": "a0051fa8-b825-46cc-a269-dd0a75e1a5f7",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790650350742
+      }
+    ],
+    "15.1 Implement Laptop_Web_App Firestore listeners and Report_Viewer deletion": [
+      {
+        "executionId": "f136a444-a39f-4898-a663-b9cf86dd69b1",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790611529866
+      },
+      {
+        "executionId": "a0051fa8-b825-46cc-a269-dd0a75e1a5f7",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790650026046
+      },
+      {
+        "executionId": "a0051fa8-b825-46cc-a269-dd0a75e1a5f7",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790650351945
+      }
+    ],
+    "15.2 Write integration tests for sync and deletion flows": [
+      {
+        "executionId": "f136a444-a39f-4898-a663-b9cf86dd69b1",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790611529956
+      },
+      {
+        "executionId": "a0051fa8-b825-46cc-a269-dd0a75e1a5f7",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790650360439
+      },
+      {
+        "executionId": "a0051fa8-b825-46cc-a269-dd0a75e1a5f7",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790650880950
+      }
+    ],
+    "16.1 Build the review + Template_Manager + Mapping_Editor + Report UI": [
+      {
+        "executionId": "f136a444-a39f-4898-a663-b9cf86dd69b1",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790611530051
+      },
+      {
+        "executionId": "a0051fa8-b825-46cc-a269-dd0a75e1a5f7",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790650359705
+      },
+      {
+        "executionId": "a0051fa8-b825-46cc-a269-dd0a75e1a5f7",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790650881874
+      }
+    ],
+    "16.2 Write unit tests for export and preview UI": [
+      {
+        "executionId": "f136a444-a39f-4898-a663-b9cf86dd69b1",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790611530144
+      },
+      {
+        "executionId": "a0051fa8-b825-46cc-a269-dd0a75e1a5f7",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790650889188
+      },
+      {
+        "executionId": "a0051fa8-b825-46cc-a269-dd0a75e1a5f7",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790651071658
+      }
+    ],
+    "17. Final checkpoint - full system integration": [
+      {
+        "executionId": "f136a444-a39f-4898-a663-b9cf86dd69b1",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790611530234
+      },
+      {
+        "executionId": "a0051fa8-b825-46cc-a269-dd0a75e1a5f7",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790652228647
+      }
+    ],
+    "1. Set up project structure, tooling, and shared models": [
+      {
+        "executionId": "f136a444-a39f-4898-a663-b9cf86dd69b1",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790613959166
+      }
+    ],
+    "6. Implement rating validation and category averaging (pure logic)": [
+      {
+        "executionId": "f136a444-a39f-4898-a663-b9cf86dd69b1",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790614967226
+      }
+    ],
+    "5. Implement the local (IndexedDB) persistence layer on Mobile_PWA": [
+      {
+        "executionId": "f136a444-a39f-4898-a663-b9cf86dd69b1",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790614968534
+      }
+    ],
+    "2. Configure Firebase backend, emulator, and security rules": [
+      {
+        "executionId": "f136a444-a39f-4898-a663-b9cf86dd69b1",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790616489397
+      }
+    ],
+    "7. Implement the template/mapping engine (ingest side)": [
+      {
+        "executionId": "a0051fa8-b825-46cc-a269-dd0a75e1a5f7",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790647487503
+      }
+    ],
+    "3. Implement Auth_Service and role handling": [
+      {
+        "executionId": "a0051fa8-b825-46cc-a269-dd0a75e1a5f7",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790647840716
+      }
+    ],
+    "8. Implement Firestore data access for templates and mappings": [
+      {
+        "executionId": "a0051fa8-b825-46cc-a269-dd0a75e1a5f7",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790648184032
+      }
+    ],
+    "13. Implement PWA installability and offline shell": [
+      {
+        "executionId": "a0051fa8-b825-46cc-a269-dd0a75e1a5f7",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790648976453
+      }
+    ],
+    "10. Implement the Report_Generator pipeline (fidelity-by-preservation)": [
+      {
+        "executionId": "a0051fa8-b825-46cc-a269-dd0a75e1a5f7",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790649583146
+      }
+    ],
+    "12. Implement the Mobile_PWA capture UI and R&H_Parameter selection": [
+      {
+        "executionId": "a0051fa8-b825-46cc-a269-dd0a75e1a5f7",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790650015223
+      }
+    ],
+    "14. Implement the Sync_Engine and conflict resolution": [
+      {
+        "executionId": "a0051fa8-b825-46cc-a269-dd0a75e1a5f7",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790650350854
+      }
+    ],
+    "15. Implement retention, deletion, and Laptop real-time listeners": [
+      {
+        "executionId": "a0051fa8-b825-46cc-a269-dd0a75e1a5f7",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790650881096
+      }
+    ],
+    "16. Wire the Laptop_Web_App review, generation, and export UI": [
+      {
+        "executionId": "a0051fa8-b825-46cc-a269-dd0a75e1a5f7",
+        "chatSessionId": "sess_5f89ef39-1691-4c91-a6d4-136e3998e232",
+        "timestamp": 1790651071786
+      }
+    ]
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "_comment": "TEMPLATE ONLY. Copy this file to tools/users.json (which is gitignored) and replace every email/password with real values before seeding. Each entry: { email, password, roles, displayName? }. roles is a list of 'Tester', 'Report_Viewer', 'Template_Admin' (one person may hold several). Passwords must be at least 6 characters. Then run: npm run seed:users -- --file tools/users.json",
+  "users": [
+    {
+      "email": "lead.engineer@example.com",
+      "password": "change-me-lead",
+      "roles": ["Tester", "Report_Viewer", "Template_Admin"],
+      "displayName": "Lead Engineer"
+    },
+    {
+      "email": "report.viewer@example.com",
+      "password": "change-me-viewer",
+      "roles": ["Report_Viewer"],
+      "displayName": "Report Viewer One"
+    },
+    {
+      "email": "tester.one@example.com",
+      "password": "change-me-tester1",
+      "roles": ["Tester"],
+      "displayName": "Tester One"
+    }
+  ]
+}

@@ -1,0 +1,555 @@
+/* R&H Tyre Testing — Laptop_Web_App design system.
+ *
+ * A small, dependency-free design system: professional office palette anchored
+ * on a slate brand (#0f172a) with a blue accent, a typographic + spacing scale,
+ * and styled primitives (buttons, inputs, tables, cards, alerts) applied via
+ * className hooks added around — never in place of — the roles/labels/text the
+ * component tests query.
+ */
+
+:root {
+  /* Brand + palette */
+  --color-brand: #0f172a;
+  --color-brand-700: #1e293b;
+  --color-brand-600: #334155;
+  --color-accent: #2563eb;
+  --color-accent-600: #1d4ed8;
+  --color-accent-700: #1e40af;
+
+  --color-surface: #ffffff;
+  --color-canvas: #f1f5f9;
+  --color-panel: #ffffff;
+  --color-panel-alt: #f8fafc;
+
+  --color-text: #0f172a;
+  --color-text-muted: #64748b;
+  --color-text-inverse: #f8fafc;
+
+  --color-border: #e2e8f0;
+  --color-border-strong: #cbd5e1;
+
+  --color-danger: #b00020;
+  --color-danger-bg: #fef2f2;
+  --color-danger-border: #fecaca;
+  --color-success: #0a6b0a;
+  --color-success-bg: #f0fdf4;
+  --color-success-border: #bbf7d0;
+  --color-warning-bg: #fffbeb;
+  --color-warning-border: #fde68a;
+
+  /* Typography scale */
+  --font-sans: 'Segoe UI', system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif;
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.375rem;
+  --text-2xl: 1.75rem;
+
+  /* Spacing scale */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-8: 3rem;
+
+  --radius-sm: 4px;
+  --radius: 8px;
+  --radius-lg: 12px;
+
+  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.06);
+  --shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+
+  --content-max: 1120px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  line-height: 1.5;
+  color: var(--color-text);
+  background: var(--color-canvas);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ------------------------------------------------------------------ *
+ * App shell
+ * ------------------------------------------------------------------ */
+
+.app-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: var(--color-brand);
+  color: var(--color-text-inverse);
+  box-shadow: var(--shadow);
+}
+
+.app-header__inner {
+  max-width: var(--content-max);
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-4) var(--space-5);
+}
+
+.app-header__title {
+  margin: 0;
+  font-size: var(--text-xl);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--color-text-inverse);
+}
+
+.app-header__user {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  font-size: var(--text-sm);
+}
+
+.app-header__identity {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  line-height: 1.25;
+}
+
+.app-header__email {
+  font-weight: 600;
+}
+
+.app-header__role {
+  color: #cbd5e1;
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.app-shell {
+  max-width: var(--content-max);
+  margin: 0 auto;
+  padding: var(--space-5);
+}
+
+/* ------------------------------------------------------------------ *
+ * Navigation (workspace tabs)
+ * ------------------------------------------------------------------ */
+
+.app-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-bottom: var(--space-5);
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: var(--space-2);
+}
+
+.app-nav__tab {
+  appearance: none;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--color-text-muted);
+  font: inherit;
+  font-weight: 600;
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.app-nav__tab:hover {
+  background: var(--color-panel-alt);
+  color: var(--color-text);
+}
+
+.app-nav__tab--active {
+  background: var(--color-surface);
+  color: var(--color-accent-700);
+  border-color: var(--color-border);
+  box-shadow: var(--shadow-sm);
+}
+
+/* ------------------------------------------------------------------ *
+ * Cards / panels
+ * ------------------------------------------------------------------ */
+
+.card {
+  background: var(--color-panel);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  padding: var(--space-5);
+  margin-bottom: var(--space-5);
+}
+
+.card h2 {
+  margin-top: 0;
+  margin-bottom: var(--space-4);
+  font-size: var(--text-lg);
+  font-weight: 600;
+  color: var(--color-brand);
+}
+
+.card h3 {
+  font-size: var(--text-base);
+  font-weight: 600;
+  color: var(--color-brand-700);
+  margin-bottom: var(--space-2);
+}
+
+.card h4 {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--color-brand-700);
+  margin: var(--space-4) 0 var(--space-2);
+}
+
+/* ------------------------------------------------------------------ *
+ * Forms
+ * ------------------------------------------------------------------ */
+
+.card label {
+  display: block;
+  margin-bottom: var(--space-3);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--color-brand-700);
+}
+
+.card input[type='text'],
+.card input[type='email'],
+.card input[type='password'],
+.card input[type='file'],
+.card select {
+  display: block;
+  width: 100%;
+  max-width: 420px;
+  margin-top: var(--space-1);
+  padding: var(--space-2) var(--space-3);
+  font: inherit;
+  font-weight: 400;
+  color: var(--color-text);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.card input:focus,
+.card select:focus {
+  outline: none;
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+/* Compact inline inputs used inside table cells keep a natural width. */
+.card td input[type='text'],
+.card td select {
+  max-width: 100%;
+  margin-top: 0;
+}
+
+.card input[type='checkbox'] {
+  width: auto;
+  margin: 0;
+}
+
+/* ------------------------------------------------------------------ *
+ * Buttons
+ * ------------------------------------------------------------------ */
+
+.card button,
+.app-header button,
+button.btn {
+  appearance: none;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-accent);
+  background: var(--color-accent);
+  color: #ffffff;
+  transition: background 0.15s ease, border-color 0.15s ease, opacity 0.15s ease;
+  margin-right: var(--space-2);
+  margin-top: var(--space-1);
+}
+
+.card button:hover,
+button.btn:hover {
+  background: var(--color-accent-600);
+  border-color: var(--color-accent-600);
+}
+
+.card button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* Secondary / neutral buttons (Cancel, Inspect, Remove, list toggles). */
+.card ul button,
+.card .btn-secondary {
+  background: var(--color-panel-alt);
+  color: var(--color-brand-700);
+  border-color: var(--color-border-strong);
+}
+
+.card ul button:hover,
+.card .btn-secondary:hover {
+  background: #e2e8f0;
+  border-color: var(--color-border-strong);
+}
+
+/* The signed-in sign-out button in the header. */
+.app-header button {
+  background: transparent;
+  border-color: rgba(248, 250, 252, 0.4);
+  color: var(--color-text-inverse);
+  margin: 0;
+}
+
+.app-header button:hover {
+  background: rgba(248, 250, 252, 0.12);
+}
+
+/* ------------------------------------------------------------------ *
+ * Tables
+ * ------------------------------------------------------------------ */
+
+.card table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: var(--space-3) 0 var(--space-4);
+  font-size: var(--text-sm);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.card th {
+  text-align: left;
+  background: var(--color-brand-700);
+  color: var(--color-text-inverse);
+  font-weight: 600;
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+  white-space: nowrap;
+}
+
+.card td {
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+  vertical-align: middle;
+}
+
+.card tbody tr:nth-child(even) {
+  background: var(--color-panel-alt);
+}
+
+.card tbody tr:hover {
+  background: #eef2ff;
+}
+
+/* ------------------------------------------------------------------ *
+ * Lists (session/template lists)
+ * ------------------------------------------------------------------ */
+
+.card ul {
+  list-style: none;
+  margin: var(--space-3) 0;
+  padding: 0;
+}
+
+.card ul li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  margin-bottom: var(--space-2);
+  background: var(--color-surface);
+}
+
+/* Definition lists inside detail panels. */
+.card dl {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: var(--space-1) var(--space-4);
+  margin: var(--space-3) 0;
+}
+
+.card dt {
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.card dd {
+  margin: 0;
+}
+
+/* ------------------------------------------------------------------ *
+ * Status / alert messaging
+ * ------------------------------------------------------------------ */
+
+.card [role='alert'] {
+  background: var(--color-danger-bg);
+  border: 1px solid var(--color-danger-border);
+  color: var(--color-danger);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-sm);
+  margin: var(--space-3) 0;
+  font-weight: 500;
+}
+
+/* The withheld-mapping conflict block and missing-required-fields block get
+ * a prominent warning treatment while keeping their role/label/text intact. */
+.card [role='alert'] ul,
+.card [role='alert'] li {
+  border: none;
+  background: transparent;
+  margin: 0;
+  padding: 0;
+  display: list-item;
+  list-style: disc inside;
+}
+
+.card p[role='status'] {
+  background: var(--color-success-bg);
+  border: 1px solid var(--color-success-border);
+  color: var(--color-success);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-sm);
+  margin: var(--space-3) 0;
+  font-weight: 500;
+}
+
+/* Inline confirm/status text inside a list row stays inline (not a block). */
+.card ul span[role='status'] {
+  background: var(--color-warning-bg);
+  border: 1px solid var(--color-warning-border);
+  color: var(--color-brand-700);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  margin: 0;
+  font-weight: 500;
+}
+
+/* Loading + empty states. */
+.state-note {
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+
+.loading-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--color-text-muted);
+}
+
+.loading-indicator::before {
+  content: '';
+  width: 0.75rem;
+  height: 0.75rem;
+  border: 2px solid var(--color-border-strong);
+  border-top-color: var(--color-accent);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ------------------------------------------------------------------ *
+ * Standalone screens (sign-in, access restricted, loading)
+ * ------------------------------------------------------------------ */
+
+.screen {
+  max-width: 420px;
+  margin: 10vh auto;
+  padding: var(--space-6);
+  background: var(--color-panel);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+}
+
+.screen h1 {
+  margin-top: 0;
+  color: var(--color-brand);
+  font-size: var(--text-2xl);
+}
+
+.screen label {
+  display: block;
+  margin-bottom: var(--space-3);
+  font-weight: 600;
+  color: var(--color-brand-700);
+}
+
+.screen input {
+  display: block;
+  width: 100%;
+  margin-top: var(--space-1);
+  padding: var(--space-2) var(--space-3);
+  font: inherit;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+}
+
+.screen input:focus {
+  outline: none;
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+.screen button {
+  appearance: none;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  padding: var(--space-2) var(--space-5);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-accent);
+  background: var(--color-accent);
+  color: #ffffff;
+  margin-top: var(--space-2);
+}
+
+.screen button:hover {
+  background: var(--color-accent-600);
+}
+
+.screen button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.screen [role='alert'] {
+  background: var(--color-danger-bg);
+  border: 1px solid var(--color-danger-border);
+  color: var(--color-danger);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-sm);
+  margin: var(--space-3) 0;
+}

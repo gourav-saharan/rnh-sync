@@ -1,0 +1,73 @@
+rules_version = '2';
+
+// Cloud Storage security rules for the R&H Tyre Testing System.
+//
+// The only stored blobs are customer template workbooks at
+//   templates/{templateId}/original.xlsx
+// (design.md > Data Models). Template management is a Report_Viewer
+// capability (Requirements 2.1, 2.6), so only Report_Viewers may read or
+// write template blobs. Testers and unauthenticated users are denied.
+//
+// The caller's role is stored in the `role` field of their Firestore
+// `users/{uid}` document; Storage rules read it via firestore.get().
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // v2: roles list on users/{uid}; legacy single `role` still honoured.
+    function hasRole(r) {
+      return isSignedIn()
+        && firestore.exists(/databases/(default)/documents/users/$(request.auth.uid))
+        && (
+          r in firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.get('roles', [])
+          || firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.get('role', '') == r
+        );
+    }
+
+    function isReportViewer() { return hasRole('Report_Viewer'); }
+    // Legacy v1 Report_Viewers (no `roles` list) keep template admin rights.
+    function isTemplateAdmin() {
+      return hasRole('Template_Admin')
+        || (isSignedIn()
+          && firestore.exists(/databases/(default)/documents/users/$(request.auth.uid))
+          && !(firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.get('roles', null) is list)
+          && firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.get('role', '') == 'Report_Viewer');
+    }
+    function isTester() { return hasRole('Tester'); }
+
+    function isXlsx() {
+      return request.resource.size < 10 * 1024 * 1024;
+    }
+
+    // Draft workbook: Template_Admin writes; Report_Viewer / admin read.
+    // Published v{n}.xlsx: create once, never overwritten (R2.4).
+    // original.xlsx: v1 legacy path.
+    match /templates/{templateId}/{fileName} {
+      allow read: if isReportViewer() || isTemplateAdmin();
+      // Writes: draft/original may be replaced; any other file (v{n}.xlsx) only
+      // when nothing exists at that path yet (explicit resource == null check,
+      // so it holds regardless of how create vs update is classified).
+      allow write: if request.resource != null
+        && (isTemplateAdmin() || isReportViewer())
+        && isXlsx()
+        && (fileName == 'draft.xlsx' || fileName == 'original.xlsx' || resource == null);
+      allow delete: if isTemplateAdmin() && fileName == 'draft.xlsx';
+    }
+
+    // Tyre photos (R5.8): images under 5 MB.
+    match /sessions/{sessionId}/photos/{fileName} {
+      allow read: if isTester() || isReportViewer();
+      allow write: if isTester()
+        && request.resource.size < 5 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+    }
+
+    // Deny everything else by default.
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "files": [],
+  "references": [
+    { "path": "./packages/shared" },
+    { "path": "./apps/mobile-pwa" },
+    { "path": "./apps/laptop-web" }
+  ]
+}

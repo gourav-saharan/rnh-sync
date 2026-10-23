@@ -1,0 +1,30 @@
+{
+  "name": "@rnh/shared",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    },
+    "./v2data": {
+      "types": "./src/v2data/index.ts",
+      "default": "./src/v2data/index.ts"
+    },
+    "./v2": {
+      "types": "./src/v2/index.ts",
+      "default": "./src/v2/index.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc --build",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "exceljs": "^4.4.0",
+    "firebase": "^11.1.0"
+  }
+}
