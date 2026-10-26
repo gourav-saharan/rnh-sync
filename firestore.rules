@@ -13,7 +13,6 @@ rules_version = '2';
 //     uid) but may NOT write Customer_Templates or Field_Mappings.
 //   - Report_Viewers may read Test_Sessions and manage (read/write)
 //     Customer_Templates and their Field_Mappings, and may delete
-//     Test_Sessions (Requirements 10.5, 10.6).
 service cloud.firestore {
   match /databases/{database}/documents {
 
