@@ -1,10 +1,12 @@
 // v2 Template_Manager data access (R2, R3, R4 persistence).
 //
-// Firestore: customerTemplates/{tid} holds the editable draft inline;
-// customerTemplates/{tid}/versions/{n} holds immutable published versions.
-// Blob storage: customerTemplates/{tid}/blobs/draft and
-// customerTemplates/{tid}/blobs/v{n} store Excel workbooks as native
-// chunked Firestore binary blobs with zero external GCS or CORS dependencies.
+// Firestore: customerTemplates/{tid} holds the editable draft metadata
+// (structure, schema, mappings); customerTemplates/{tid}/versions/{n} holds
+// immutable published versions. Workbooks (up to 10 MB, R2.2) live in
+// customerTemplates/{tid}/blobs/draft and blobs/v{n} as chunked Firestore
+// binary blobs (blobs.ts), never inline: a document is capped at 1 MiB.
+// Templates created before this change may still carry inline
+// `workbookBytes`; loaders read those first.
 // No Cloud Functions: publish copies the draft blob client-side.
 
 import {
@@ -18,6 +20,7 @@ import {
   runTransaction,
   setDoc,
   updateDoc,
+  deleteField,
   Bytes,
   type Firestore,
 } from 'firebase/firestore';
@@ -31,7 +34,7 @@ import {
   type TemplateStructureV2,
   type TemplateVersion,
 } from '../v2/model';
-import { readFirestoreBlob } from './blobs';
+import { readFirestoreBlob, writeFirestoreBlob } from './blobs';
 
 export const XLSX_MIME = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 
@@ -61,6 +64,56 @@ export function stripUndefined<T>(value: T): T {
     return out as T;
   }
   return value;
+}
+
+function sameBytes(a: Uint8Array, b: Uint8Array): boolean {
+  if (a.byteLength !== b.byteLength) return false;
+  for (let i = 0; i < a.byteLength; i++) if (a[i] !== b[i]) return false;
+  return true;
+}
+
+/** Thrown when a template or version has no stored workbook (R12.3). */
+export class WorkbookMissingError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'WorkbookMissingError';
+  }
+}
+
+/** Inline workbook bytes from a Firestore field, or null when absent/empty. */
+export function storedWorkbookBytes(raw: unknown): Uint8Array | null {
+  let bytes: Uint8Array | null = null;
+  if (raw instanceof Uint8Array) bytes = raw;
+  else if (raw && typeof (raw as Bytes).toUint8Array === 'function') {
+    bytes = (raw as Bytes).toUint8Array();
+  }
+  return bytes && bytes.byteLength > 0 ? bytes : null;
+}
+
+/**
+ * Inline bytes when present, else the chunked blob. A missing or empty
+ * workbook raises WorkbookMissingError instead of returning an empty file,
+ * so publishing and report generation fail loudly. Other errors (offline,
+ * permission) are passed through unchanged.
+ */
+async function resolveWorkbookBytes(
+  raw: unknown,
+  readBlob: () => Promise<Uint8Array>,
+  missingMessage: string,
+): Promise<Uint8Array> {
+  const inline = storedWorkbookBytes(raw);
+  if (inline) return inline;
+  let bytes: Uint8Array;
+  try {
+    bytes = await readBlob();
+  } catch (e) {
+    if (e instanceof Error && e.message.startsWith('Blob not found')) {
+      throw new WorkbookMissingError(missingMessage);
+    }
+    throw e;
+  }
+  if (bytes.byteLength === 0) throw new WorkbookMissingError(missingMessage);
+  return bytes;
 }
 
 export interface TemplateStoreDeps {
@@ -157,6 +210,14 @@ export function createTemplateStoreV2(deps: TemplateStoreDeps = {}): TemplateSto
     async createTemplate(input) {
       const tid = newId('tpl', 10);
       const at = now();
+      // Workbook goes to the chunked blob first (up to 10 MB, R2.2). It is no
+      // longer embedded in the template doc, which is capped at 1 MiB and is
+      // downloaded by every template-list snapshot.
+      await writeFirestoreBlob(fs(), templatePathsV2.blobs(tid), 'draft', input.bytes, {
+        contentType: XLSX_MIME,
+        userId: input.userId,
+        now: at,
+      });
       const template: CustomerTemplateV2 = {
         templateId: tid,
         customerName: input.customerName.trim(),
@@ -166,7 +227,6 @@ export function createTemplateStoreV2(deps: TemplateStoreDeps = {}): TemplateSto
         latestPublishedAt: null,
         draft: {
           storagePath: templatePathsV2.draftBlob(tid),
-          workbookBytes: Bytes.fromUint8Array(input.bytes),
           structure: input.structure,
           schema: input.schema ?? emptySchema(),
           mappings: input.mappings ?? [],
@@ -182,9 +242,15 @@ export function createTemplateStoreV2(deps: TemplateStoreDeps = {}): TemplateSto
 
     async replaceDraftWorkbook(tid, bytes, structure, userId) {
       const at = now();
+      await writeFirestoreBlob(fs(), templatePathsV2.blobs(tid), 'draft', bytes, {
+        contentType: XLSX_MIME,
+        userId,
+        now: at,
+      });
       await updateDoc(doc(fs(), templatePathsV2.template(tid)), {
         'draft.storagePath': templatePathsV2.draftBlob(tid),
-        'draft.workbookBytes': Bytes.fromUint8Array(bytes),
+        // Drop any legacy inline copy so loadDraftBytes reads the new blob.
+        'draft.workbookBytes': deleteField(),
         'draft.structure': stripUndefined(structure),
         'draft.updatedAt': at,
         'draft.updatedBy': userId,
@@ -209,15 +275,10 @@ export function createTemplateStoreV2(deps: TemplateStoreDeps = {}): TemplateSto
       const data = snap.data() as Partial<CustomerTemplateV2> & {
         draft?: { workbookBytes?: unknown };
       };
-      const raw = data?.draft?.workbookBytes;
-      if (raw && typeof (raw as Bytes).toUint8Array === 'function') {
-        return (raw as Bytes).toUint8Array();
-      }
-      if (raw instanceof Uint8Array) {
-        return raw;
-      }
-      return await readFirestoreBlob(fs(), templatePathsV2.blobs(tid), 'draft').catch(
-        () => new Uint8Array(0),
+      return resolveWorkbookBytes(
+        data?.draft?.workbookBytes,
+        () => readFirestoreBlob(fs(), templatePathsV2.blobs(tid), 'draft'),
+        'The draft workbook is missing. Upload the Excel file again.',
       );
     },
 
@@ -234,15 +295,10 @@ export function createTemplateStoreV2(deps: TemplateStoreDeps = {}): TemplateSto
       const snap = await getDoc(doc(fs(), templatePathsV2.version(tid, n)));
       if (!snap.exists()) throw new Error('Version not found.');
       const data = snap.data() as Partial<TemplateVersion> & { workbookBytes?: unknown };
-      const raw = data?.workbookBytes;
-      if (raw && typeof (raw as Bytes).toUint8Array === 'function') {
-        return (raw as Bytes).toUint8Array();
-      }
-      if (raw instanceof Uint8Array) {
-        return raw;
-      }
-      return await readFirestoreBlob(fs(), templatePathsV2.blobs(tid), `v${n}`).catch(
-        () => new Uint8Array(0),
+      return resolveWorkbookBytes(
+        data?.workbookBytes,
+        () => readFirestoreBlob(fs(), templatePathsV2.blobs(tid), `v${n}`),
+        `The workbook for version ${n} is missing, so no report can be built from it.`,
       );
     },
     listPublishedLatest: async () => [],
@@ -263,8 +319,8 @@ function withPublishing(store: TemplateStoreV2, d: PublishDeps): TemplateStoreV2
 
     /**
      * Publish the draft as a new immutable version (R2.4).
-     * The workbook bytes are copied from the draft into the version document,
-     * then the version doc and the template's latestVersion are written in one transaction.
+     * The draft workbook is copied into the chunked blob `blobs/v{n}`, then the
+     * version doc and the template's latestVersion are written in one transaction.
      */
     async publish(tid, userId) {
       const tpl = await d.getTemplate(tid);
@@ -273,13 +329,29 @@ function withPublishing(store: TemplateStoreV2, d: PublishDeps): TemplateStoreV2
       const n = (tpl.latestVersion ?? 0) + 1;
       const bytes = await store.loadDraftBytes(tid);
       const at = d.now();
+      // Copy the workbook into the immutable v{n} blob before the version doc
+      // exists. Rules make the blob final once its meta is written; if two
+      // people publish at once, the second write is refused here.
+      // A previous attempt may have stored the blob and then failed before the
+      // version doc was written: reuse it when it holds the same bytes.
+      const existing = await readFirestoreBlob(d.fs(), templatePathsV2.blobs(tid), `v${n}`).catch(
+        () => null,
+      );
+      if (!existing) {
+        await writeFirestoreBlob(d.fs(), templatePathsV2.blobs(tid), `v${n}`, bytes, {
+          contentType: XLSX_MIME,
+          userId,
+          now: at,
+        });
+      } else if (!sameBytes(existing, bytes)) {
+        throw new Error('Someone else published meanwhile. Reload and try again.');
+      }
       const version: TemplateVersion = {
         templateId: tid,
         customerName: tpl.customerName,
         templateName: tpl.templateName,
         version: n,
         storagePath: templatePathsV2.versionBlob(tid, n),
-        workbookBytes: Bytes.fromUint8Array(bytes),
         structure: tpl.draft.structure,
         schema: tpl.draft.schema,
         mappings: tpl.draft.mappings,

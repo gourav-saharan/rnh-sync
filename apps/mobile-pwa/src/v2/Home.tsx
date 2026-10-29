@@ -2,9 +2,11 @@
 // state (R8.6), resume (R8.2), and "New test" from a cached published
 // template (R5.1, R8.3, R8.4).
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createSessionV2, type LocalTestSessionV2, type TemplateVersion } from '@rnh/shared/v2';
 import { useServices, useSyncStatus } from './context';
+import { InstallCard } from './PwaPrompts';
+import { PULL_THRESHOLD, usePullToRefresh } from './pullToRefresh';
 import type { CachedVersion } from './store';
 import { SessionCard } from './SessionCard';
 import { resolveDeletedOnServer, type DeletedChoice } from './syncEngine';
@@ -145,8 +147,42 @@ export function Home({ onOpen, onSettings, pickingExternal, onSetPickingExternal
 
   const shown = filterSessions(filteredByStatus, query);
 
+  // Pull down at the top of the list to sync (native list gesture).
+  const mainRef = useRef<HTMLElement>(null);
+  const pull = usePullToRefresh(mainRef, {
+    enabled: status.online && !status.syncing && !picking,
+    onRefresh: async () => {
+      await sync.syncNow();
+      setReload((n) => n + 1);
+    },
+  });
+  const pullShown = pull.refreshing || pull.offset > 0;
+
   return (
-    <main className="screen screen--home">
+    <main ref={mainRef} className="screen screen--home">
+      {pullShown ? (
+        <div
+          className={`pull-indicator${pull.refreshing ? ' pull-indicator--busy' : ''}`}
+          style={{ height: pull.refreshing ? 48 : pull.offset }}
+          role="status"
+          aria-live="polite"
+        >
+          <span
+            className="pull-indicator__icon"
+            aria-hidden="true"
+            style={{ transform: `rotate(${Math.min(1, pull.offset / PULL_THRESHOLD) * 180}deg)` }}
+          >
+            ↻
+          </span>
+          <span className="pull-indicator__text">
+            {pull.refreshing
+              ? 'Syncing…'
+              : pull.offset >= PULL_THRESHOLD
+                ? 'Release to sync'
+                : 'Pull to sync'}
+          </span>
+        </div>
+      ) : null}
       {/* Native App Top Header */}
       <header className="app-header">
         <div className="app-header__main">
@@ -261,6 +297,8 @@ export function Home({ onOpen, onSettings, pickingExternal, onSetPickingExternal
           {error}
         </p>
       ) : null}
+
+      <InstallCard dismissible />
 
       {/* Primary Action Button directly below Header */}
       <div className="home-action-bar">

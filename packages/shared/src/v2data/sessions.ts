@@ -5,7 +5,6 @@
 // through `updateFields`, which also appends history entries (R10.4).
 
 import {
-  addDoc,
   collection,
   deleteDoc,
   doc,
@@ -17,6 +16,8 @@ import {
   setDoc,
   updateDoc,
   where,
+  writeBatch,
+  type DocumentReference,
   type Firestore,
 } from 'firebase/firestore';
 import { getFirebaseServices } from '../firebase/app';
@@ -32,6 +33,7 @@ export const sessionPathsV2 = {
   sessions: () => 'testSessions',
   session: (sid: string) => `testSessions/${sid}`,
   history: (sid: string) => `testSessions/${sid}/history`,
+  photos: (sid: string) => `testSessions/${sid}/photos`,
 } as const;
 
 export function isV2Session(data: unknown): data is TestSessionV2 {
@@ -138,25 +140,25 @@ export function createSessionStoreV2(
       const at = now();
       const payload: Record<string, unknown> = { updatedAt: at, updatedBy: by.uid };
       for (const c of changes) payload[c.path] = c.after === undefined ? null : c.after;
-      await updateDoc(doc(fs(), sessionPathsV2.session(sid)), stripUndefined(payload));
+      // One batch: the edit and its history entries land together or not at
+      // all, so an edit can never be saved without its history (R10.4).
+      const batch = writeBatch(fs());
+      batch.update(doc(fs(), sessionPathsV2.session(sid)), stripUndefined(payload));
       // Derived progress is not a user edit; keep it out of the history.
-      await Promise.all(
-        changes
-          .filter((c) => c.path !== 'progress')
-          .map((c) =>
-            addDoc(
-              collection(fs(), sessionPathsV2.history(sid)),
-              stripUndefined({
-                path: c.path,
-                before: c.before ?? null,
-                after: c.after ?? null,
-                by: by.uid,
-                byName: by.name,
-                at,
-              } satisfies HistoryEntry),
-            ),
-          ),
-      );
+      for (const c of changes.filter((x) => x.path !== 'progress')) {
+        batch.set(
+          doc(collection(fs(), sessionPathsV2.history(sid))),
+          stripUndefined({
+            path: c.path,
+            before: c.before ?? null,
+            after: c.after ?? null,
+            by: by.uid,
+            byName: by.name,
+            at,
+          } satisfies HistoryEntry),
+        );
+      }
+      await batch.commit();
     },
 
     async listHistory(sid) {
@@ -185,6 +187,23 @@ export function createSessionStoreV2(
     },
 
     async purge(sid) {
+      // Children first, the session last: rules allow deleting history only
+      // while the parent session still exists and is 30+ days in the trash.
+      const refs: DocumentReference[] = [];
+      const hist = await getDocs(collection(fs(), sessionPathsV2.history(sid)));
+      for (const d of hist.docs) refs.push(d.ref);
+      const photos = await getDocs(collection(fs(), sessionPathsV2.photos(sid)));
+      for (const p of photos.docs) {
+        const chunks = await getDocs(collection(p.ref, 'chunks'));
+        for (const c of chunks.docs) refs.push(c.ref);
+        refs.push(p.ref);
+      }
+      // Firestore allows 500 writes per batch.
+      for (let i = 0; i < refs.length; i += 450) {
+        const batch = writeBatch(fs());
+        for (const r of refs.slice(i, i + 450)) batch.delete(r);
+        await batch.commit();
+      }
       await deleteDoc(doc(fs(), sessionPathsV2.session(sid)));
     },
   };

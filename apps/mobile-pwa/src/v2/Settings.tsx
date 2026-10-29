@@ -11,6 +11,7 @@ import {
   useTheme,
   type DrivePrefs,
 } from './context';
+import { InstallCard } from './PwaPrompts';
 
 export interface SettingsProps {
   onBack: () => void;
@@ -136,6 +137,8 @@ export function Settings({ onBack }: SettingsProps): JSX.Element {
           Sync now
         </button>
       </section>
+
+      <InstallCard />
 
       <section className="card">
         <h2 className="card__title">About</h2>

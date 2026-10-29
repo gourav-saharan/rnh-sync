@@ -63,15 +63,18 @@ export default defineConfig(({ mode }) => ({
       ? []
       : [
           VitePWA({
-            registerType: 'autoUpdate',
+            // Ask before activating a new build (UpdateToast), never mid-test.
+            registerType: 'prompt',
             includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
             manifest: {
               name: 'R&H Tyre Testing',
               short_name: 'R&H Testing',
               description:
                 'Capture Ride & Handling tyre evaluations offline during and after driving.',
-              theme_color: '#0f172a',
-              background_color: '#0f172a',
+              // Match index.html theme-color and the light app background, so
+              // the launch splash and status bar do not flash dark.
+              theme_color: '#145DA0',
+              background_color: '#F3F6FA',
               display: 'standalone',
               orientation: 'portrait',
               start_url: '/',
@@ -100,6 +103,24 @@ export default defineConfig(({ mode }) => ({
               globPatterns: ['**/*.{js,css,html,svg,png,ico,woff2}'],
               navigateFallback: 'index.html',
               cleanupOutdatedCaches: true,
+              // Roboto comes from Google Fonts. Cache it after the first online
+              // launch so the app keeps its look with no signal.
+              runtimeCaching: [
+                {
+                  urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
+                  handler: 'StaleWhileRevalidate',
+                  options: { cacheName: 'google-fonts-stylesheets' },
+                },
+                {
+                  urlPattern: /^https:\/\/fonts\.gstatic\.com\/.*/i,
+                  handler: 'CacheFirst',
+                  options: {
+                    cacheName: 'google-fonts-webfonts',
+                    expiration: { maxEntries: 30, maxAgeSeconds: 60 * 60 * 24 * 365 },
+                    cacheableResponse: { statuses: [0, 200] },
+                  },
+                },
+              ],
             },
             devOptions: {
               enabled: false,

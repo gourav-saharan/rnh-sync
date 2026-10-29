@@ -5,6 +5,8 @@ import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import { hasRole, type AppUser } from '@rnh/shared/v2';
 import { createAuthServiceV2, type AuthServiceV2, type AuthStateV2 } from '@rnh/shared/v2data';
 
+const MIN_PASSWORD = 6;
+
 export interface AuthGateV2Props {
   authService?: AuthServiceV2;
   children: (user: AppUser, auth: AuthServiceV2) => ReactNode;
@@ -92,8 +94,10 @@ function EnableTester({
           {email}{' '}
           {roles.length > 0
             ? `is set up for the office (${roles.join(', ').replace(/_/g, ' ')}), not for capturing tests on the phone.`
-            : 'has no role yet.'}{' '}
-          Turn on testing to rate tyres from this phone. Your office access stays the same.
+            : 'has no profile yet, so it cannot capture tests.'}{' '}
+          {roles.length > 0
+            ? 'Turn on testing to rate tyres from this phone. Your office access stays the same.'
+            : 'Turn on testing to set it up as a Tester account.'}
         </p>
         {error ? (
           <p role="alert" className="auth-error">
@@ -130,17 +134,24 @@ function SignInV2({ auth }: { auth: AuthServiceV2 }): JSX.Element {
   const [confirm, setConfirm] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [showPw, setShowPw] = useState(false);
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
+    // Same rule and wording as Firebase's weak-password error, checked
+    // before any network call so the Tester gets instant feedback.
+    if (register && password.length < MIN_PASSWORD) {
+      setError(`Password is too weak. Use at least ${MIN_PASSWORD} characters.`);
+      return;
+    }
     if (register && password !== confirm) {
       setError('Passwords do not match.');
       return;
     }
     setBusy(true);
     try {
-      if (register) await auth.signUp(email, password, name, ['Tester']);
+      if (register) await auth.signUp(email, password, name);
       else await auth.signIn(email, password);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong. Please try again.');
@@ -179,18 +190,24 @@ function SignInV2({ auth }: { auth: AuthServiceV2 }): JSX.Element {
           <label className="field">
             <span className="field__label">Password</span>
             <input
-              type="password"
+              type={showPw ? 'text' : 'password'}
               value={password}
               autoComplete={register ? 'new-password' : 'current-password'}
               onChange={(e) => setPassword(e.target.value)}
+              aria-describedby={register ? 'auth-pw-hint' : undefined}
               required
             />
           </label>
           {register ? (
+            <p id="auth-pw-hint" className="auth-hint">
+              At least {MIN_PASSWORD} characters.
+            </p>
+          ) : null}
+          {register ? (
             <label className="field">
               <span className="field__label">Confirm password</span>
               <input
-                type="password"
+                type={showPw ? 'text' : 'password'}
                 value={confirm}
                 autoComplete="new-password"
                 onChange={(e) => setConfirm(e.target.value)}
@@ -198,6 +215,14 @@ function SignInV2({ auth }: { auth: AuthServiceV2 }): JSX.Element {
               />
             </label>
           ) : null}
+          <label className="auth-check">
+            <input
+              type="checkbox"
+              checked={showPw}
+              onChange={(e) => setShowPw(e.target.checked)}
+            />
+            <span>Show password</span>
+          </label>
           {error ? (
             <p role="alert" className="auth-error">
               {error}
@@ -213,6 +238,9 @@ function SignInV2({ auth }: { auth: AuthServiceV2 }): JSX.Element {
           onClick={() => {
             setRegister((r) => !r);
             setError(null);
+            // Never carry a typed password across modes.
+            setPassword('');
+            setConfirm('');
           }}
         >
           {register ? 'Have an account? Sign in' : 'New here? Create account'}

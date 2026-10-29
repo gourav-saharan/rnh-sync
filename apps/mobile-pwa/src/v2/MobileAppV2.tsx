@@ -2,7 +2,9 @@
 // screen of the open test is persisted in its cursor, so a crash or reload
 // reopens exactly where the Tester was (R8.2).
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { parentOf, transitionFor, type MobileRoute, type ScreenMotion } from './mobileNav';
+import { UpdateToast } from './PwaPrompts';
 import type { LocalTestSessionV2 } from '@rnh/shared/v2';
 import type { AuthServiceV2 } from '@rnh/shared/v2data';
 import { AuthGateV2 } from './AuthGateV2';
@@ -14,10 +16,7 @@ import { Overview } from './Overview';
 import { Summary } from './Summary';
 import { Settings } from './Settings';
 
-type Route =
-  | { name: 'home' }
-  | { name: 'settings' }
-  | { name: 'setup' | 'drive' | 'overview' | 'summary'; sessionId: string };
+type Route = MobileRoute;
 
 const OPEN_KEY = 'openSessionId';
 
@@ -37,11 +36,45 @@ function Router(): JSX.Element {
     })();
   }, [local]);
 
+  // Push / pop / fade animation for the next screen (native feel).
+  const [motion, setMotion] = useState<ScreenMotion>('none');
+
   const go = (r: Route) => {
+    setMotion(transitionFor(latest.current.route, r));
     setRoute(r);
     void local.setMeta(OPEN_KEY, 'sessionId' in r ? r.sessionId : null);
     window.scrollTo?.(0, 0);
   };
+
+  // Hardware / gesture Back (Android, installed PWA). While Back has somewhere
+  // to go inside the app, keep one guard entry in the browser history; Back
+  // pops it and we navigate in-app instead of leaving. On Home with nothing
+  // open, there is no guard, so Back leaves the app as on a native app.
+  const latest = useRef({ route, pickingTemplate });
+  latest.current = { route, pickingTemplate };
+  const canGoBack = !!route && (pickingTemplate || parentOf(route) !== null);
+
+  useEffect(() => {
+    if (canGoBack && !(window.history.state as { rnhGuard?: boolean } | null)?.rnhGuard) {
+      window.history.pushState({ rnhGuard: true }, '');
+    }
+  }, [canGoBack, route]);
+
+  useEffect(() => {
+    const onPop = () => {
+      const { route: r, pickingTemplate: picking } = latest.current;
+      if (picking) {
+        setPickingTemplate(false);
+        return;
+      }
+      const parent = r ? parentOf(r) : null;
+      if (parent) go(parent);
+    };
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+    // go only depends on `local`, which is stable per signed-in user.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [local]);
 
   if (!route) return <p className="app-loading">Loading…</p>;
   const home = () => go({ name: 'home' });
@@ -50,27 +83,11 @@ function Router(): JSX.Element {
 
   return (
     <div className="native-app-container">
-      {/* Top simulated native status bar on desktop viewports */}
-      <div className="native-status-bar" aria-hidden="true">
-        <span className="native-status-bar__time">9:41</span>
-        <div className="native-status-bar__notch" aria-hidden="true" />
-        <div className="native-status-bar__icons">
-          <span className="native-status-bar__cellular">5G</span>
-          <span className="native-status-bar__signal">
-            <svg width="17" height="12" viewBox="0 0 17 12" fill="currentColor">
-              <rect x="0" y="9" width="3" height="3" rx="0.5" />
-              <rect x="4.5" y="6" width="3" height="6" rx="0.5" />
-              <rect x="9" y="3" width="3" height="9" rx="0.5" />
-              <rect x="13.5" y="0" width="3" height="12" rx="0.5" />
-            </svg>
-          </span>
-          <span className="native-status-bar__battery">
-            <span className="battery-capsule">100%</span>
-          </span>
-        </div>
-      </div>
-
       <div className="native-app-body">
+        <div
+          key={'sessionId' in route ? `${route.name}:${route.sessionId}` : route.name}
+          className={`screen-motion screen-motion--${motion}`}
+        >
         {(() => {
           switch (route.name) {
             case 'home':
@@ -125,7 +142,10 @@ function Router(): JSX.Element {
               );
           }
         })()}
+        </div>
       </div>
+
+      <UpdateToast />
 
       {/* Persistent Native Bottom Navigation Bar for Root Screens */}
       {isRootRoute ? (
@@ -190,9 +210,8 @@ function Router(): JSX.Element {
               ) : null}
             </button>
           </nav>
-          <div className="android-gesture-bar" aria-hidden="true">
-            <div className="android-gesture-pill" />
-          </div>
+          {/* Keeps the nav clear of the phone's own home indicator. */}
+          <div className="android-gesture-bar" aria-hidden="true" />
         </div>
       ) : null}
 </div>

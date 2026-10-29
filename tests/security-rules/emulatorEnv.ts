@@ -14,8 +14,14 @@ const here = dirname(fileURLToPath(import.meta.url));
 /** Repo root is two levels up from `tests/security-rules`. */
 const repoRoot = resolve(here, '..', '..');
 
-/** The Firebase project id used by the emulator (matches `.firebaserc`). */
-export const PROJECT_ID = 'rnh-tyre-testing-system';
+/**
+ * The Firebase project id used by the emulator. It must match the project the
+ * emulators were started with (`.firebaserc` default, exported by
+ * `firebase emulators:exec` as GCLOUD_PROJECT): with `singleProjectMode`, the
+ * Storage emulator's `firestore.get()` in storage.rules reads that project, so
+ * a different id here makes every Storage role lookup fail.
+ */
+export const PROJECT_ID = process.env.GCLOUD_PROJECT || 'rnh-sync';
 
 /**
  * Emulator ports: `firebase emulators:exec` exports the real host:port in
@@ -65,6 +71,25 @@ export async function createTestEnv(): Promise<RulesTestEnvironment> {
         (err instanceof Error ? err.message : String(err)),
     );
   }
+}
+
+/**
+ * Deletes every Storage object, including nested paths.
+ *
+ * `env.clearStorage()` (rules-unit-testing 3.0.4) lists only the bucket root,
+ * so files such as `templates/t1/v1.xlsx` survive between tests and make
+ * write-once checks fail for the wrong reason. This walks every prefix.
+ */
+export async function clearStorageDeep(env: RulesTestEnvironment): Promise<void> {
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    type Ref = ReturnType<ReturnType<typeof ctx.storage>['ref']>;
+    const walk = async (ref: Ref): Promise<void> => {
+      const { items, prefixes } = await ref.listAll();
+      await Promise.all(items.map((item) => item.delete()));
+      for (const p of prefixes) await walk(p);
+    };
+    await walk(ctx.storage().ref());
+  });
 }
 
 /**
@@ -123,6 +148,8 @@ export async function seedTemplate(
 export function sessionData(ownerUid: string): Record<string, unknown> {
   return {
     sessionId: 's-doc',
+    // Rules accept only v2 session creates (schemaVersion == 2).
+    schemaVersion: 2,
     templateId: null,
     createdBy: ownerUid,
     tyreSets: [],

@@ -63,11 +63,56 @@ describe('AuthGateV2', () => {
     expect(screen.getByText('capture')).toBeInTheDocument();
   });
 
+  it('a no-role account does not reach capture', () => {
+    const auth = fakeAuth({ state: 'no-role', uid: 'u1', email: 'x@example.com' });
+    render(<AuthGateV2 authService={auth}>{() => <p>capture</p>}</AuthGateV2>);
+    expect(screen.queryByText('capture')).not.toBeInTheDocument();
+  });
+
   it('a profile read failure offers Try again', () => {
     const auth = fakeAuth({ state: 'error', uid: 'u1', email: 'x@example.com' });
     render(<AuthGateV2 authService={auth}>{() => <p>capture</p>}</AuthGateV2>);
     fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
     expect(auth.refresh).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('SignInV2 UX', () => {
+  const openRegister = () => {
+    const auth = fakeAuth({ state: 'unauthenticated' });
+    render(<AuthGateV2 authService={auth}>{() => <p>capture</p>}</AuthGateV2>);
+    fireEvent.click(screen.getByRole('button', { name: 'New here? Create account' }));
+    return auth;
+  };
+
+  it('rejects a short password before calling the server', () => {
+    const auth = openRegister();
+    fireEvent.change(screen.getByLabelText(/Your name/), { target: { value: 'N' } });
+    fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'n@example.com' } });
+    fireEvent.change(screen.getByLabelText('Password'), { target: { value: '123' } });
+    fireEvent.change(screen.getByLabelText('Confirm password'), { target: { value: '123' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Create account' }));
+    expect(screen.getByRole('alert')).toHaveTextContent('at least 6 characters');
+    expect(auth.signUp).not.toHaveBeenCalled();
+  });
+
+  it('registers with no roles argument (service always uses Tester)', async () => {
+    const auth = openRegister();
+    fireEvent.change(screen.getByLabelText(/Your name/), { target: { value: 'N' } });
+    fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'n@example.com' } });
+    fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'secret1' } });
+    fireEvent.change(screen.getByLabelText('Confirm password'), { target: { value: 'secret1' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Create account' }));
+    await vi.waitFor(() =>
+      expect(auth.signUp).toHaveBeenCalledWith('n@example.com', 'secret1', 'N'),
+    );
+  });
+
+  it('show password toggles the input type', () => {
+    openRegister();
+    const pw = screen.getByLabelText('Password');
+    fireEvent.click(screen.getByLabelText('Show password'));
+    expect(pw).toHaveAttribute('type', 'text');
   });
 });
 

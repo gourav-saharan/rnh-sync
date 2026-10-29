@@ -1176,6 +1176,29 @@ body {
   gap: 1rem;
 }
 
+/* Password hint sits right under its field (the form gap is 1rem). */
+.auth-hint {
+  margin: -0.75rem 0 0;
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+
+/* Show-password toggle: 44 px tall touch target. */
+.auth-check {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 44px;
+  cursor: pointer;
+}
+
+.auth-check input {
+  width: 1.25rem;
+  height: 1.25rem;
+  margin: 0;
+  accent-color: var(--accent);
+}
+
 .auth-error {
   margin: 0;
   padding: 0.75rem 1rem;
@@ -1246,56 +1269,6 @@ body {
     border-right: none;
     box-shadow: none;
   }
-}
-
-/* Simulated Native Status Bar (shown on desktop frame, hidden on mobile) */
-.native-status-bar {
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.45rem 1.25rem;
-  font-size: 0.8125rem;
-  font-weight: 700;
-  color: var(--text);
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
-  user-select: none;
-  z-index: 100;
-}
-
-@media (max-width: 480px) {
-  .native-status-bar {
-    display: none;
-  }
-}
-
-.native-status-bar__notch {
-  width: 80px;
-  height: 16px;
-  background: rgba(0, 0, 0, 0.08);
-  border-radius: 999px;
-}
-
-.native-status-bar__icons {
-  display: flex;
-  align-items: center;
-  gap: 0.45rem;
-}
-
-.native-status-bar__cellular {
-  font-size: 11px;
-  font-weight: 800;
-  color: var(--text);
-  letter-spacing: -0.02em;
-}
-
-.battery-capsule {
-  display: inline-flex;
-  align-items: center;
-  font-size: 11px;
-  font-weight: 800;
-  color: var(--text);
 }
 
 .native-app-body {
@@ -1961,20 +1934,10 @@ body {
   transform: translateY(-1px);
 }
 
+/* Safe-area spacer under the bottom nav (the OS draws its own home indicator). */
 .android-gesture-bar {
-  height: 14px;
-  padding-bottom: env(safe-area-inset-bottom, 4px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.android-gesture-pill {
-  width: 72px;
   height: 4px;
-  border-radius: 999px;
-  background: var(--border);
-  opacity: 0.8;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 /* --- Native Bottom Action Sheet Drawer --------------------------------- */
@@ -2408,3 +2371,168 @@ body {
   max-width: 280px;
   line-height: 1.4;
 }
+
+/* ==========================================================================
+   NATIVE FEEL: screen transitions, update toast, install card, pull to sync
+   ========================================================================== */
+
+/* --- Screen push / pop / fade ----------------------------------------- */
+
+.screen-motion {
+  display: flex;
+  flex-direction: column;
+  flex: 1 0 auto;
+  min-height: 100%;
+}
+
+@keyframes screen-push-in {
+  from {
+    opacity: 0.6;
+    transform: translateX(24%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes screen-pop-in {
+  from {
+    opacity: 0.6;
+    transform: translateX(-18%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes screen-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.screen-motion--forward {
+  animation: screen-push-in 0.24s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.screen-motion--back {
+  animation: screen-pop-in 0.22s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.screen-motion--fade {
+  animation: screen-fade-in 0.16s ease-out;
+}
+
+/* The wrapper animates; skip the per-screen fade so it does not double up. */
+.screen-motion--forward > .screen,
+.screen-motion--back > .screen {
+  animation: none;
+}
+
+/* --- Update available toast ------------------------------------------- */
+
+.update-toast {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 88px);
+  width: calc(100% - 2rem);
+  max-width: 408px;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 0.75rem 0.75rem 1rem;
+  border-radius: 16px;
+  background: var(--text);
+  color: var(--bg);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.25);
+  z-index: 300;
+  animation: v2-slide-down 0.2s ease-out;
+}
+
+.update-toast__text {
+  flex: 1 1 auto;
+  font-size: 0.875rem;
+  line-height: 1.35;
+}
+
+.update-toast__btn {
+  flex-shrink: 0;
+  min-height: 44px;
+}
+
+/* --- Install the app card --------------------------------------------- */
+
+.install-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  border: 1px solid var(--accent-soft);
+  background: linear-gradient(135deg, var(--accent-soft), var(--surface));
+}
+
+.install-card__body .card__title {
+  margin-bottom: 0.25rem;
+}
+
+.install-card__actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.install-card__actions .btn {
+  min-height: 44px;
+}
+
+/* --- Pull to sync ----------------------------------------------------- */
+
+.pull-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 0.875rem;
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+.pull-indicator__icon {
+  display: inline-block;
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+@keyframes pull-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.pull-indicator--busy {
+  transition: height 0.18s ease-out;
+}
+
+.pull-indicator--busy .pull-indicator__icon {
+  animation: pull-spin 0.8s linear infinite;
+}
+
+/* --- Respect the phone's reduce-motion setting ------------------------ */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+

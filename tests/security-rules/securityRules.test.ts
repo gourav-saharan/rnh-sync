@@ -30,6 +30,7 @@ import {
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 import {
   ROLE,
+  clearStorageDeep,
   createTestEnv,
   mappingData,
   seedSession,
@@ -58,7 +59,7 @@ afterEach(async () => {
   // Clear document data between tests, but re-seed the user role docs so the
   // rules can still resolve roles in the next test.
   await env.clearFirestore();
-  await env.clearStorage();
+  await clearStorageDeep(env);
   await seedUser(env, TESTER_A, ROLE.tester);
   await seedUser(env, TESTER_B, ROLE.tester);
   await seedUser(env, VIEWER, ROLE.reportViewer);
@@ -200,9 +201,9 @@ describe('Report_Viewer access (R1.5, and R10.5/R10.6 deletion)', () => {
     await assertSucceeds(viewerDb().doc('testSessions/s1').get());
   });
 
-  it('can delete a testSession', async () => {
+  it('cannot delete a live testSession directly (trash first, R13.2)', async () => {
     await seedSession(env, 's1', TESTER_A);
-    await assertSucceeds(viewerDb().doc('testSessions/s1').delete());
+    await assertFails(viewerDb().doc('testSessions/s1').delete());
   });
 
   it('cannot create a testSession (capture is a Tester capability)', async () => {
@@ -246,21 +247,24 @@ describe('users/{uid} role document access', () => {
     await assertFails(testerADb().doc(`users/${TESTER_B}`).get());
   });
 
-  it('a signed-in user can create their own role document with a valid role (self-registration)', async () => {
+  it('a signed-in user can create their own role document as Tester (self-registration)', async () => {
     await assertSucceeds(
       newUserDb()
         .doc(`users/${NEW_USER}`)
         .set({
           uid: NEW_USER,
           email: `${NEW_USER}@example.com`,
-          role: ROLE.tester,
+          displayName: NEW_USER,
+          roles: [ROLE.tester],
           createdAt: Date.now(),
         }),
     );
   });
 
-  it('accepts either valid role on self-registration (Report_Viewer)', async () => {
-    await assertSucceeds(
+  it('cannot self-register with the legacy single `role` field (v2 rules)', async () => {
+    // v1 clients wrote `role`; hasRole() still honours it for migrated
+    // accounts, so a client-written `role` would be an escalation path.
+    await assertFails(
       newUserDb()
         .doc(`users/${NEW_USER}`)
         .set({

@@ -7,12 +7,12 @@
 // WHY THIS EXISTS
 // ---------------
 // The apps use Firebase purely as a backend service (no Cloud Functions).
-// The deployed Firestore security rules (firestore.rules) require every
-// signed-in user to have a `users/{uid}` document whose `role` is one of
-// 'Tester' | 'Report_Viewer', and they explicitly forbid clients from writing
-// that document (`allow write: if false`). So both the Firebase Auth account
-// AND its role document must be created OUT OF BAND, with the privileged
-// Firebase Admin SDK. That is exactly what this standalone script does.
+// The deployed Firestore security rules (firestore.rules) read each signed-in
+// user's roles from `users/{uid}.roles` (any of 'Tester' | 'Report_Viewer' |
+// 'Template_Admin'). Clients may only self-register as ['Tester'], so every
+// office role must be granted OUT OF BAND with the privileged Firebase Admin
+// SDK. That is exactly what this standalone script does: seed accounts from a
+// users file, or change roles with --email + --add-role / --remove-role.
 //
 // It is NOT part of any workspace build/test. It is a plain Node ESM script an
 // operator runs from a workstation that has a service-account key.
@@ -81,6 +81,10 @@ function parseArgs(argv) {
     key: null,
     resetPasswords: false,
     dryRun: false,
+    // Role-change mode (task 9.6): --email + --add-role / --remove-role.
+    emails: [],
+    addRoles: [],
+    removeRoles: [],
   };
 
   for (let i = 0; i < argv.length; i += 1) {
@@ -99,6 +103,16 @@ function parseArgs(argv) {
         break;
       case '--dry-run':
         args.dryRun = true;
+        break;
+      case '--email':
+      case '-e':
+        args.emails.push(requireValue(argv, ++i, arg).trim());
+        break;
+      case '--add-role':
+        args.addRoles.push(requireValue(argv, ++i, arg));
+        break;
+      case '--remove-role':
+        args.removeRoles.push(requireValue(argv, ++i, arg));
         break;
       case '--help':
       case '-h':
@@ -132,6 +146,13 @@ function printUsageAndExit(code) {
       '  --reset-passwords       Update the password of existing Auth users',
       '  --dry-run               Validate and report actions without writing',
       '  -h, --help              Show this help',
+      '',
+      'Role changes for existing accounts (users file is not read):',
+      '  -e, --email <addr>      Account to change (repeatable)',
+      '  --add-role <Role>       Add a role (repeatable)',
+      '  --remove-role <Role>    Remove a role (repeatable)',
+      `  Roles: ${VALID_ROLES.join(', ')}`,
+      '  Example: npm run seed:users -- --email a@x.com --add-role Report_Viewer',
       '',
       'Credentials are resolved from --key, then GOOGLE_APPLICATION_CREDENTIALS,',
       'then Application Default Credentials.',
@@ -356,11 +377,116 @@ async function upsertUserDoc(firestore, uid, entry, { dryRun }) {
 }
 
 // ---------------------------------------------------------------------------
+// Role changes (--add-role / --remove-role)
+// ---------------------------------------------------------------------------
+
+/**
+ * Pure: the roles list after applying additions and removals. Unknown roles
+ * in the stored doc are dropped; the legacy single `role` is folded in.
+ * Removal wins when a role is both added and removed.
+ * @returns {string[]}
+ */
+export function applyRoleChange(current, legacyRole, add, remove) {
+  // Legacy v1 Report_Viewers also managed templates (matches rolesFromDoc in
+  // packages/shared/src/v2data/auth.ts and the v1 -> v2 migration).
+  const base = Array.isArray(current)
+    ? current
+    : legacyRole === 'Report_Viewer'
+      ? ['Report_Viewer', 'Template_Admin']
+      : typeof legacyRole === 'string'
+        ? [legacyRole]
+        : [];
+  const out = [];
+  for (const r of [...base, ...add]) {
+    if (VALID_ROLES.includes(r) && !remove.includes(r) && !out.includes(r)) out.push(r);
+  }
+  return out;
+}
+
+/** Problems with a role-change request (empty when valid). */
+export function validateRoleChange({ emails, addRoles, removeRoles }) {
+  const problems = [];
+  if (emails.length === 0) problems.push('--email is required with --add-role / --remove-role');
+  for (const e of emails) if (!e.includes('@')) problems.push(`invalid email: ${e}`);
+  for (const r of [...addRoles, ...removeRoles]) {
+    if (!VALID_ROLES.includes(r)) problems.push(`unknown role "${r}" (use ${VALID_ROLES.join(', ')})`);
+  }
+  return problems;
+}
+
+async function changeRoles(args) {
+  const problems = validateRoleChange(args);
+  if (problems.length > 0) {
+    for (const p of problems) console.error(`ERROR ${p}`);
+    process.exit(1);
+  }
+
+  const app = await initAdmin(args.key);
+  const auth = getAuth(app);
+  const firestore = getFirestore(app);
+  const { FieldValue } = await import('firebase-admin/firestore');
+  let failed = 0;
+
+  for (const email of args.emails) {
+    try {
+      // Only existing accounts: role changes never create Auth users.
+      const user = await auth.getUserByEmail(email);
+      const ref = firestore.collection('users').doc(user.uid);
+      const snap = await ref.get();
+      const data = snap.exists ? snap.data() : {};
+      const before = applyRoleChange(data.roles, data.role, [], []);
+      const after = applyRoleChange(data.roles, data.role, args.addRoles, args.removeRoles);
+      const line = `${email.padEnd(32)} ${before.join('+') || '(none)'} -> ${after.join('+') || '(none)'}`;
+
+      if (args.dryRun) {
+        console.log(`DRY   ${line}`);
+        continue;
+      }
+      await ref.set(
+        {
+          uid: user.uid,
+          email: user.email ?? email,
+          displayName: data.displayName || user.displayName || email,
+          roles: after,
+          // Drop the legacy field so it cannot re-grant a removed role.
+          role: FieldValue.delete(),
+          createdAt: typeof data.createdAt === 'number' ? data.createdAt : Date.now(),
+        },
+        { merge: true },
+      );
+      console.log(`OK    ${line}`);
+    } catch (cause) {
+      failed += 1;
+      const msg =
+        cause && cause.code === 'auth/user-not-found'
+          ? 'no account with this email (create it with the users file first)'
+          : cause instanceof Error
+            ? cause.message
+            : String(cause);
+      console.error(`FAIL  ${email} — ${msg}`);
+    }
+  }
+  if (failed > 0) process.exit(1);
+}
+
+// ---------------------------------------------------------------------------
 // Main
 // ---------------------------------------------------------------------------
 
 async function main() {
   const args = parseArgs(process.argv.slice(2));
+
+  if (args.addRoles.length > 0 || args.removeRoles.length > 0) {
+    console.log('R&H Tyre Testing System — role change');
+    console.log(`  dry run    : ${args.dryRun ? 'yes' : 'no'}`);
+    console.log('');
+    await changeRoles(args);
+    return;
+  }
+  if (args.emails.length > 0) {
+    console.error('--email needs --add-role or --remove-role.');
+    process.exit(1);
+  }
 
   console.log('R&H Tyre Testing System — user seeding');
   console.log(`  users file : ${args.file}`);
@@ -429,8 +555,12 @@ async function main() {
   }
 }
 
-main().catch((cause) => {
-  console.error('\nUnexpected error:');
-  console.error(cause instanceof Error ? cause.stack ?? cause.message : String(cause));
-  process.exit(1);
-});
+// Run only when executed directly, so the pure helpers can be imported.
+const isMain = process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+if (isMain) {
+  main().catch((cause) => {
+    console.error('\nUnexpected error:');
+    console.error(cause instanceof Error ? cause.stack ?? cause.message : String(cause));
+    process.exit(1);
+  });
+}

@@ -2,14 +2,13 @@ rules_version = '2';
 
 // Cloud Storage security rules for the R&H Tyre Testing System.
 //
-// The only stored blobs are customer template workbooks at
-//   templates/{templateId}/original.xlsx
-// (design.md > Data Models). Template management is a Report_Viewer
-// capability (Requirements 2.1, 2.6), so only Report_Viewers may read or
-// write template blobs. Testers and unauthenticated users are denied.
+// NOTE: the v2 apps no longer use Cloud Storage. Workbooks and tyre photos
+// are stored as chunked Firestore blobs and protected by firestore.rules
+// (customerTemplates/{tid}/blobs/**, testSessions/{sid}/photos/**). These
+// rules only guard the legacy paths below and deny everything else.
 //
-// The caller's role is stored in the `role` field of their Firestore
-// `users/{uid}` document; Storage rules read it via firestore.get().
+// Roles come from the `roles` list on Firestore users/{uid} (legacy single
+// `role` still honoured), read via firestore.get().
 service firebase.storage {
   match /b/{bucket}/o {
 

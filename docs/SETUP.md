@@ -52,8 +52,11 @@ can be mixed.
 Each person opens the app that matches the role they need and clicks
 **Create account**:
 
-- **mobile-pwa** registers the account with roles **`["Tester"]`**.
-- **laptop-web** registers the account with roles **`["Report_Viewer", "Template_Admin"]`**.
+- Both apps register the account with roles **`["Tester"]`** only. The
+  security rules reject any other self-registered role list.
+- Office roles (`Report_Viewer`, `Template_Admin`) are granted only by an
+  administrator with the seeder (Option B). Until then the laptop app shows
+  "No office access yet".
 
 Roles are stored as a list in `users/{uid}.roles`. One person can hold several
 roles (e.g. an engineer who drives and writes the report). Multi-role accounts
@@ -64,10 +67,8 @@ Register creates the Firebase Auth account and writes the `users/{uid}` role
 document automatically. This requires **Email/Password enabled** (section 1) and
 the **rules deployed** (section 2).
 
-An account has exactly one role, tied to the app it was registered in. For a
-person who needs both roles, either register separately in each app using
-different emails, or have an admin adjust the role via the console / Admin SDK
-(seeder).
+A self-registered account is a Tester. To give a person office roles, an
+admin updates their `roles` list via the console / Admin SDK (seeder).
 
 ### Option B — Admin seeding (bulk / pre-provisioning / custom roles)
 
@@ -108,6 +109,23 @@ documents.
 - `--key <path>` — service-account key file (overrides the env var).
 - `--reset-passwords` — update the password of users that already exist.
 - `--dry-run` — validate and report actions without writing anything.
+
+#### Changing roles of existing accounts
+
+Grant or revoke roles without a users file (the account must already exist,
+e.g. after self-registration as a Tester):
+
+```
+npm run seed:users -- --email person@example.com --add-role Report_Viewer --add-role Template_Admin
+npm run seed:users -- --email person@example.com --remove-role Template_Admin
+```
+
+- `--email <addr>` (repeatable), `--add-role <Role>` and `--remove-role <Role>`
+  (both repeatable). Roles: `Tester`, `Report_Viewer`, `Template_Admin`.
+- If a role is both added and removed, removal wins.
+- The legacy single `role` field is folded into `roles` and then removed.
+- Combine with `--dry-run` to print `before -> after` without writing.
+- The user sees new roles after selecting **Try again** or signing in again.
 
 Example — reset passwords for the real user list:
 
@@ -216,12 +234,12 @@ pointing the Admin SDK at it (set `FIRESTORE_EMULATOR_HOST` /
   `serviceAccountKey.json`, `tools/users.json`, etc.).
 - There are **no Cloud Functions**. All access control is in `firestore.rules`
   and `storage.rules`; admin-only work runs locally via `tools/`.
-- Self-registration is open to anyone who can reach the app URL, and the
-  laptop grants `Template_Admin`. For tighter control, seed all users and
-  disable new sign-ups in Firebase console > Authentication > Settings.
+- Self-registration is open to anyone who can reach the app URL, but it only
+  ever grants `Tester`. For tighter control, seed all users and disable new
+  sign-ups in Firebase console > Authentication > Settings.
 - Clients MAY create their own `users/{uid}` role document exactly once via the
-  Register flow — the rules allow a signed-in user to create their own doc with
-  1–2 valid roles. They CANNOT update or delete it
-  afterwards (`allow update, delete: if false`). Changing an existing role
+  Register flow, with exactly `roles: ["Tester"]` and no legacy `role` field.
+  The only later self-service change is an office account adding `Tester` to
+  itself; they cannot delete the doc or add any other role. Changing an existing role
   therefore requires the console or the Admin SDK (seeder), which bypass the
   rules.

@@ -52,39 +52,36 @@ export async function writeFirestoreBlob(
     updatedBy: options.userId ?? '',
   };
 
-  // Firestore allows up to 500 operations per batch.
-  // For a typical template (50 KB - 1 MB), chunkCount is 1-2.
-  // For larger files, we batch in chunks of 450 operations.
-  const MAX_BATCH_OPS = 450;
+  // Firestore caps a commit request at 10 MiB, so a 10 MB workbook cannot go
+  // in one batch. Chunks go in batches of BLOB_CHUNKS_PER_BATCH (~4 MB each).
+  // The meta document is written LAST: readers only see a blob once every
+  // chunk is stored, and rules treat a version blob as final once its meta
+  // exists (a failed publish can be retried until then).
   let batch = writeBatch(fs);
-  let opsInBatch = 0;
-
-  batch.set(metaRef, meta);
-  opsInBatch += 1;
+  let inBatch = 0;
 
   for (let i = 0; i < chunkCount; i++) {
     const start = i * FIRESTORE_BLOB_CHUNK_SIZE;
     const end = Math.min(start + FIRESTORE_BLOB_CHUNK_SIZE, totalSize);
-    const slice = bytes.slice(start, end);
     const chunkRef = doc(fs, `${collectionPath}/${blobId}/chunks/${i}`);
-
     batch.set(chunkRef, {
       index: i,
-      data: Bytes.fromUint8Array(slice),
+      data: Bytes.fromUint8Array(bytes.slice(start, end)),
     });
-    opsInBatch += 1;
-
-    if (opsInBatch >= MAX_BATCH_OPS) {
+    inBatch += 1;
+    if (inBatch >= BLOB_CHUNKS_PER_BATCH) {
       await batch.commit();
       batch = writeBatch(fs);
-      opsInBatch = 0;
+      inBatch = 0;
     }
   }
 
-  if (opsInBatch > 0) {
-    await batch.commit();
-  }
+  batch.set(metaRef, meta);
+  await batch.commit();
 }
+
+/** Chunks per commit: 8 x 500 KB = 4 MB, well under the 10 MiB request cap. */
+export const BLOB_CHUNKS_PER_BATCH = 8;
 
 /**
  * Reads a chunked binary blob from Firestore, reassembles all chunks in order,

@@ -31,8 +31,8 @@ describe('stripUndefined', () => {
     const bytes = new Uint8Array([10, 20, 30, 40]);
     const firestoreBytes = Bytes.fromUint8Array(bytes);
     const res = stripUndefined(firestoreBytes);
-    expect(typeof (res as any).toUint8Array).toBe('function');
-    expect(Array.from((res as any).toUint8Array())).toEqual([10, 20, 30, 40]);
+    expect(typeof (res as Bytes).toUint8Array).toBe('function');
+    expect(Array.from((res as Bytes).toUint8Array())).toEqual([10, 20, 30, 40]);
   });
 
   it('preserves Bytes inside document data structures', () => {
@@ -47,7 +47,7 @@ describe('stripUndefined', () => {
     };
     const stripped = stripUndefined(docData);
     expect(stripped.draft.notes).toBeUndefined();
-    expect(typeof (stripped.draft.workbookBytes as any).toUint8Array).toBe('function');
-    expect(Array.from((stripped.draft.workbookBytes as any).toUint8Array())).toEqual([7, 8, 9]);
+    expect(typeof (stripped.draft.workbookBytes as Bytes).toUint8Array).toBe('function');
+    expect(Array.from((stripped.draft.workbookBytes as Bytes).toUint8Array())).toEqual([7, 8, 9]);
   });
 });

@@ -11,7 +11,7 @@ import {
   type RulesTestEnvironment,
 } from '@firebase/rules-unit-testing';
 import { afterAll, beforeAll, beforeEach, describe, it } from 'vitest';
-import { createTestEnv } from './emulatorEnv';
+import { clearStorageDeep, createTestEnv } from './emulatorEnv';
 
 let env: RulesTestEnvironment;
 
@@ -62,7 +62,7 @@ beforeAll(async () => {
 
 beforeEach(async () => {
   await env.clearFirestore();
-  await env.clearStorage();
+  await clearStorageDeep(env);
   await seedRoles(ADMIN, ['Template_Admin']);
   await seedRoles(VIEWER, ['Report_Viewer']);
   await seedRoles(TESTER, ['Tester']);
@@ -206,7 +206,7 @@ describe('v2 self-registration with a roles list (R1.3, R14.4)', () => {
     createdAt: 0,
   });
 
-  it('accepts the phone and laptop sign-up role lists', async () => {
+  it('accepts self-registration as Tester only', async () => {
     await assertSucceeds(
       db(NEW)
         .doc(`users/${NEW}`)
@@ -214,11 +214,52 @@ describe('v2 self-registration with a roles list (R1.3, R14.4)', () => {
     );
   });
 
-  it('accepts Report_Viewer + Template_Admin (laptop sign-up)', async () => {
-    await assertSucceeds(
+  it('rejects self-registration with any office role', async () => {
+    await assertFails(
       db(NEW)
         .doc(`users/${NEW}`)
         .set(doc(['Report_Viewer', 'Template_Admin'])),
+    );
+    await assertFails(
+      db(NEW)
+        .doc(`users/${NEW}`)
+        .set(doc(['Template_Admin'])),
+    );
+    await assertFails(
+      db(NEW)
+        .doc(`users/${NEW}`)
+        .set(doc(['Report_Viewer'])),
+    );
+    await assertFails(
+      db(NEW)
+        .doc(`users/${NEW}`)
+        .set(doc(['Tester', 'Report_Viewer'])),
+    );
+  });
+
+  it('rejects a legacy `role` field or extra fields on self-registration', async () => {
+    await assertFails(
+      db(NEW)
+        .doc(`users/${NEW}`)
+        .set({ ...doc(['Tester']), role: 'Report_Viewer' }),
+    );
+    await assertFails(
+      db(NEW)
+        .doc(`users/${NEW}`)
+        .set({ uid: NEW, email: `${NEW}@example.com`, role: 'Tester', createdAt: 0 }),
+    );
+    await assertFails(
+      db(NEW)
+        .doc(`users/${NEW}`)
+        .set({ ...doc(['Tester']), isAdmin: true }),
+    );
+  });
+
+  it('cannot create a profile for another uid', async () => {
+    await assertFails(
+      db(NEW)
+        .doc(`users/${NEW}-forged`)
+        .set({ ...doc(['Tester']), uid: `${NEW}-forged` }),
     );
   });
 

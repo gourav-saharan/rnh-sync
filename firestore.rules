@@ -2,18 +2,21 @@ rules_version = '2';
 
 // Firestore security rules for the R&H Tyre Testing System.
 //
-// Role model (design.md > Data Models > users/{uid}):
-//   The authenticated user's single role is stored in the `role` field of
-//   their `users/{uid}` document, one of 'Tester' | 'Report_Viewer'.
+// Role model (v2): users/{uid}.roles is a list of 'Tester' | 'Report_Viewer'
+// | 'Template_Admin' (one user may hold several, R1.3). Self-registration
+// creates only ['Tester']; office roles come from tools/seed-users.mjs.
 //
-// Access matrix (Requirements 1.4, 1.5, 1.6 / Property 2):
-//   - Unauthenticated users are denied every collection (only sign-in is
-//     reachable in the apps).
-//   - Testers may create/read/update their OWN Test_Sessions (createdBy ==
-//     uid) but may NOT write Customer_Templates or Field_Mappings.
-//   - Report_Viewers may read Test_Sessions and manage (read/write)
-//     Customer_Templates and their Field_Mappings, and may delete
-//     Test_Sessions (Requirements 10.5, 10.6).
+// Summary (full role x path x operation matrix:
+// tests/security-rules/securityRulesMatrix.test.ts):
+//   - Unauthenticated / no-profile users are denied everything except
+//     reading and creating their own profile.
+//   - Testers create v2 sessions they own and edit own/assigned sessions,
+//     their photos and history; they never assign, trash or record reports.
+//   - Report_Viewers review/correct any session, assign testers, trash and
+//     restore, and permanently delete after 30 days in the trash (R13.2).
+//   - Template_Admins manage templates; published versions and their
+//     workbook blobs are immutable (R2.4, R14.3).
+//   - Workbooks and photos are chunked Firestore blobs (no Cloud Storage).
 service cloud.firestore {
   match /databases/{database}/documents {
 
@@ -67,26 +70,22 @@ service cloud.firestore {
     }
 
     // --- users/{uid} -------------------------------------------------------
-    // Read own profile. Self-registration may create the OWN doc once with a
-    // single self-service role (Tester or Report_Viewer). Template_Admin and
+    // Read own profile. Self-registration may create the OWN doc once with
+    // `roles == ['Tester']` only. Report_Viewer, Template_Admin and
     // multi-role grants come only from tools/seed-users.mjs (Admin SDK).
-    // Nobody can change their own roles afterwards (R14.4).
+    // The only self-service change afterwards is adding Tester (below).
     match /users/{uid} {
       // Own profile; Report_Viewers may also list the team to assign testers.
       allow read: if isSignedIn() && (request.auth.uid == uid || isReportViewer());
       allow create: if isSignedIn()
         && request.auth.uid == uid
         && request.resource.data.uid == uid
-        && (
-          // Mobile registers ['Tester']; laptop registers
-          // ['Report_Viewer', 'Template_Admin'] (same power v1 gave Report_
-          // Viewers). Tighten by seeding users and disabling self-sign-up.
-          (request.resource.data.get('roles', null) is list
-            && request.resource.data.roles.size() >= 1
-            && request.resource.data.roles.size() <= 2
-            && request.resource.data.roles.hasOnly(['Tester', 'Report_Viewer', 'Template_Admin']))
-          || request.resource.data.get('role', '') in ['Tester', 'Report_Viewer']
-        );
+        // Self-registration is Tester only (design "Security Rules (v2)").
+        // Office roles come only from tools/seed-users.mjs (Admin SDK).
+        // No legacy `role` field: hasRole() also honours it, so allowing it
+        // here would let a client smuggle in Report_Viewer.
+        && request.resource.data.keys().hasOnly(['uid', 'email', 'displayName', 'roles', 'createdAt'])
+        && request.resource.data.roles == ['Tester'];
       // The only self-service change: an existing account may add the Tester
       // role to itself (so an office account can also capture on the phone).
       // Tester is the lowest role and self-sign-up already grants it, so this
@@ -121,13 +120,21 @@ service cloud.firestore {
       }
 
       // Binary Excel workbooks stored in Firestore (replaces Cloud Storage).
+      // `draft` is editable; published `v{n}` blobs are create-once and
+      // immutable like their version docs (R2.4, R14.3).
       match /blobs/{blobId} {
         allow read: if hasAnyRole();
-        allow write: if isTemplateAdmin() || isReportViewer();
+        allow write: if blobId == 'draft' && (isTemplateAdmin() || isReportViewer());
+        allow create: if blobId != 'draft' && isTemplateAdmin();
 
+        // Chunks are written before the meta doc (blobs.ts). A version blob's
+        // chunks may be (re)written only until its meta exists, so a failed
+        // publish can be retried but a published workbook never changes.
         match /chunks/{chunkId} {
           allow read: if hasAnyRole();
-          allow write: if isTemplateAdmin() || isReportViewer();
+          allow write: if blobId == 'draft' && (isTemplateAdmin() || isReportViewer());
+          allow create, update: if blobId != 'draft' && isTemplateAdmin()
+            && !exists(/databases/$(database)/documents/customerTemplates/$(templateId)/blobs/$(blobId));
         }
       }
 
@@ -138,57 +145,104 @@ service cloud.firestore {
       }
     }
 
+    // --- Session-scoped write helpers ---------------------------------------
+    function sessionDoc(sid) {
+      return get(/databases/$(database)/documents/testSessions/$(sid));
+    }
+
+    // Report_Viewer, or a Tester who owns / is assigned to the session (R14.2).
+    // The session must already exist (the phone pushes it before photos).
+    function canWriteSession(sid) {
+      return isReportViewer()
+        || (isTester()
+          && exists(/databases/$(database)/documents/testSessions/$(sid))
+          && testerOwns(sessionDoc(sid).data));
+    }
+
+    // Photo meta written by blobs.ts writeFirestoreBlob: images < 5 MB
+    // (matches apps/mobile-pwa/src/v2/photos.ts MAX_PHOTO_BYTES), signed by
+    // the writer, at most 11 chunks of 500 KB.
+    function validPhotoMeta() {
+      let d = request.resource.data;
+      return d.contentType is string && d.contentType.matches('image/.*')
+        && d.size is int && d.size > 0 && d.size < 5 * 1024 * 1024
+        && d.chunkCount is int && d.chunkCount >= 1 && d.chunkCount <= 11
+        && d.updatedBy == request.auth.uid;
+    }
+
+    function validChunk() {
+      return request.resource.data.data is bytes
+        && request.resource.data.data.size() <= 500 * 1024;
+    }
+
     // --- testSessions/{sessionId} -----------------------------------------
     match /testSessions/{sessionId} {
       allow read: if hasAnyRole();
 
-      // Tester creates a session they own (R14.2).
+      // Tester creates a v2 session they own (R14.2).
       allow create: if isTester()
-        && request.resource.data.createdBy == request.auth.uid;
+        && request.resource.data.createdBy == request.auth.uid
+        && request.resource.data.get('schemaVersion', 0) == 2;
 
       // Tester edits own / assigned sessions; Report_Viewer edits any
       // (review + correction, trash, restore). Owner can never be changed.
       allow update: if request.resource.data.createdBy == resource.data.createdBy
         && (
-          // Testers can never change who a test is assigned to.
           (isTester() && testerOwns(resource.data)
-            && request.resource.data.get('assignedTo', []) == resource.data.get('assignedTo', []))
+            // Testers can never change who a test is assigned to,
+            && request.resource.data.get('assignedTo', []) == resource.data.get('assignedTo', [])
+            // never record a report (laptop only, R12),
+            && !('lastReport' in request.resource.data.diff(resource.data).affectedKeys())
+            // and never move a test to the trash. Restoring (deletedAt ->
+            // null) stays allowed: the phone's "keep my edits" path (R13.3).
+            && (!('deletedAt' in request.resource.data.diff(resource.data).affectedKeys())
+              || request.resource.data.deletedAt == null))
           || isReportViewer()
         );
 
-      // Permanent delete only from the trash after 30 days (R13.2). v1
-      // sessions (no deletedAt field) may still be deleted directly.
-      allow delete: if isReportViewer()
-        && (trashExpired(resource.data) || !('deletedAt' in resource.data));
+      // Permanent delete only from the trash after 30 days (R13.2).
+      allow delete: if isReportViewer() && trashExpired(resource.data);
 
-      // Append-only edit history (R10.4).
+      // Append-only edit history (R10.4), only on sessions the writer may edit.
       match /history/{entryId} {
         allow read: if hasAnyRole();
-        allow create: if (isTester() || isReportViewer())
+        allow create: if canWriteSession(sessionId)
           && request.resource.data.by == request.auth.uid;
-        allow update, delete: if false;
+        allow update: if false;
+        // Only as part of a permanent delete: Report_Viewer, parent session
+        // 30+ days in the trash (purge deletes children before the session).
+        allow delete: if isReportViewer()
+          && exists(/databases/$(database)/documents/testSessions/$(sessionId))
+          && trashExpired(sessionDoc(sessionId).data);
       }
 
-      // Tyre photos stored in Firestore (replaces Cloud Storage).
+      // Tyre photos stored in Firestore (replaces Cloud Storage). Re-upload
+      // of the same path (a retry) is an update; only Report_Viewer deletes.
       match /photos/{photoId} {
         allow read: if hasAnyRole();
-        allow write: if isTester() || isReportViewer();
+        allow create, update: if canWriteSession(sessionId) && validPhotoMeta();
+        allow delete: if isReportViewer();
 
         match /chunks/{chunkId} {
           allow read: if hasAnyRole();
-          allow write: if isTester() || isReportViewer();
+          allow create, update: if canWriteSession(sessionId) && validChunk();
+          allow delete: if isReportViewer();
         }
       }
     }
 
-    // Alternate alias for tyre photos: sessions/{sessionId}/photos/{photoId}
+    // Alternate alias for tyre photos: sessions/{sessionId}/photos/{photoId}.
+    // blobs.ts maps this prefix to testSessions/, so clients do not write
+    // here today; the same checks apply in case they do.
     match /sessions/{sessionId}/photos/{photoId} {
       allow read: if hasAnyRole();
-      allow write: if isTester() || isReportViewer();
+      allow create, update: if canWriteSession(sessionId) && validPhotoMeta();
+      allow delete: if isReportViewer();
 
       match /chunks/{chunkId} {
         allow read: if hasAnyRole();
-        allow write: if isTester() || isReportViewer();
+        allow create, update: if canWriteSession(sessionId) && validChunk();
+        allow delete: if isReportViewer();
       }
     }
   }

@@ -25,7 +25,12 @@ export type AuthStateV2 =
 
 export interface AuthServiceV2 {
   signIn(email: string, password: string): Promise<void>;
-  signUp(email: string, password: string, displayName: string, roles: Role[]): Promise<void>;
+  /**
+   * Create an account and its `users/{uid}` doc. Self-registration always
+   * gets `roles: ['Tester']` (design "Security Rules (v2)"); office roles are
+   * granted only by tools/seed-users.mjs.
+   */
+  signUp(email: string, password: string, displayName: string): Promise<void>;
   signOut(): Promise<void>;
   subscribe(cb: (s: AuthStateV2) => void): () => void;
   /** Re-read the signed-in user's roles and notify subscribers. */
@@ -36,6 +41,9 @@ export interface AuthServiceV2 {
    */
   enableTester(): Promise<void>;
 }
+
+/** The only roles a client may give itself at sign-up (enforced in firestore.rules). */
+export const SELF_REGISTER_ROLES: readonly Role[] = ['Tester'];
 
 /** Roles list after adding Tester, or null when it is already present. */
 export function withTester(roles: readonly Role[]): Role[] | null {
@@ -106,59 +114,52 @@ function cachedUser(uid: string): AppUser | null {
   }
 }
 
-async function resolve(firestore: Firestore, user: User): Promise<AppUser | null> {
+/** Auth states produced for a signed-in Firebase user. */
+export type ResolvedAuthStateV2 = Extract<
+  AuthStateV2,
+  { state: 'authorized' } | { state: 'no-role' } | { state: 'error' }
+>;
+
+/**
+ * Resolve the signed-in user's roles from `users/{uid}` (R1.1, R1.3).
+ *
+ * Roles come only from the stored document; the client never grants or
+ * writes roles here (R14.4). A missing doc or an empty roles list is
+ * `no-role`. When the doc cannot be read (offline, R1.9) the last cached
+ * profile for the same uid is reused with its cached roles; without one
+ * the result is `error`. The cache only drives the UI: the security rules
+ * still check the server-side roles on every request.
+ */
+export async function resolveUserV2(
+  firestore: Firestore,
+  user: Pick<User, 'uid' | 'email' | 'displayName'>,
+): Promise<ResolvedAuthStateV2> {
+  const email = user.email ?? '';
+  let data: Record<string, unknown> | null;
   try {
-    const userRef = doc(firestore, 'users', user.uid);
-    const snap = await getDoc(userRef);
-    const data = snap.exists() ? (snap.data() as Record<string, unknown>) : null;
-    let roles = rolesFromDoc(data);
-
-    // If no document exists in Firestore or roles are missing, auto-create it with full roles
-    if (!data || roles.length === 0) {
-      const name = user.displayName || user.email || '';
-      try {
-        await setDoc(userRef, {
-          uid: user.uid,
-          email: user.email ?? '',
-          displayName: name,
-          roles: ['Report_Viewer', 'Template_Admin'],
-          createdAt: Date.now(),
-        });
-        await updateDoc(userRef, {
-          roles: ['Report_Viewer', 'Template_Admin', 'Tester'],
-        }).catch(() => undefined);
-      } catch {
-        /* proceed even if rule/network fails */
-      }
-      roles = ['Report_Viewer', 'Template_Admin', 'Tester'];
-    } else if (!roles.includes('Tester')) {
-      await updateDoc(userRef, {
-        roles: [...roles, 'Tester'],
-      }).catch(() => undefined);
-      roles = [...roles, 'Tester'];
-    }
-
-    const resolved: AppUser = {
-      uid: user.uid,
-      email: user.email ?? String(data?.email ?? ''),
-      displayName: String(data?.displayName ?? user.displayName ?? '') || (user.email ?? ''),
-      roles: ['Report_Viewer', 'Template_Admin', 'Tester'],
-    };
-    cacheUser(resolved);
-    return resolved;
-  } catch (err) {
-    // Offline / fallback: keep full access for the signed-in user
+    const snap = await getDoc(doc(firestore, 'users', user.uid));
+    data = snap.exists() ? (snap.data() as Record<string, unknown>) : null;
+  } catch {
     const cached = cachedUser(user.uid);
-    if (cached) return { ...cached, roles: ['Report_Viewer', 'Template_Admin', 'Tester'] };
-    const fallback: AppUser = {
-      uid: user.uid,
-      email: user.email ?? '',
-      displayName: user.displayName || user.email || '',
-      roles: ['Report_Viewer', 'Template_Admin', 'Tester'],
-    };
-    cacheUser(fallback);
-    return fallback;
+    if (cached) return { state: 'authorized', user: cached };
+    return { state: 'error', uid: user.uid, email };
   }
+
+  const roles = rolesFromDoc(data);
+  if (roles.length === 0) {
+    cacheUser(null);
+    return { state: 'no-role', uid: user.uid, email };
+  }
+
+  const resolved: AppUser = {
+    uid: user.uid,
+    email: email || String(data?.email ?? ''),
+    displayName:
+      String(data?.displayName ?? '') || user.displayName || email || String(data?.email ?? ''),
+    roles,
+  };
+  cacheUser(resolved);
+  return { state: 'authorized', user: resolved };
 }
 
 export function createAuthServiceV2(
@@ -179,7 +180,7 @@ export function createAuthServiceV2(
       }
     },
 
-    async signUp(email, password, displayName, roles) {
+    async signUp(email, password, displayName) {
       let user: User;
       try {
         const cred = await createUserWithEmailAndPassword(auth, email.trim(), password);
@@ -197,12 +198,18 @@ export function createAuthServiceV2(
         uid: user.uid,
         email: user.email ?? email.trim(),
         displayName: name,
-        roles,
+        roles: [...SELF_REGISTER_ROLES],
         createdAt: Date.now(),
       };
-      await setDoc(doc(firestore, 'users', user.uid), userDoc);
-      // Re-emit so subscribers pick up the new role doc.
-      await user.getIdToken(true).catch(() => undefined);
+      try {
+        await setDoc(doc(firestore, 'users', user.uid), userDoc);
+      } catch {
+        throw new Error(
+          'Your account was created, but its profile could not be saved. Sign in again to retry.',
+        );
+      }
+      // onAuthStateChanged fired before the doc existed; re-resolve now.
+      for (const r of refreshers) r();
     },
 
     async signOut() {
@@ -220,34 +227,19 @@ export function createAuthServiceV2(
           return;
         }
         const tryResolve = (attempt: number): void => {
-          resolve(firestore, user)
+          resolveUserV2(firestore, user)
             .then((resolved) => {
               if (mine !== seq) return;
-              if (resolved) cb({ state: 'authorized', user: resolved });
-              else if (attempt < 3) setTimeout(() => tryResolve(attempt + 1), 700);
-              else {
-                cb({
-                  state: 'authorized',
-                  user: {
-                    uid: user.uid,
-                    email: user.email ?? '',
-                    displayName: user.displayName || user.email || '',
-                    roles: ['Report_Viewer', 'Template_Admin', 'Tester'],
-                  },
-                });
+              // Brief retry for transient read failures; never grant roles.
+              if (resolved.state === 'error' && attempt < 2) {
+                setTimeout(() => tryResolve(attempt + 1), 700);
+                return;
               }
+              cb(resolved);
             })
             .catch(() => {
               if (mine !== seq) return;
-              cb({
-                state: 'authorized',
-                user: {
-                  uid: user.uid,
-                  email: user.email ?? '',
-                  displayName: user.displayName || user.email || '',
-                  roles: ['Report_Viewer', 'Template_Admin', 'Tester'],
-                },
-              });
+              cb({ state: 'error', uid: user.uid, email: user.email ?? '' });
             });
         };
         tryResolve(0);

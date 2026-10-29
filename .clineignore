@@ -1,0 +1,23 @@
+# Keep Cline's context focused. Source, tests, rules, docs, specs and memory stay visible.
+node_modules/
+**/node_modules/
+dist/
+**/dist/
+coverage/
+*.tsbuildinfo
+package-lock.json
+.firebase/
+.emulator-data/
+*-debug.log
+.tmp_*
+*.tmp
+tools/backups/
+archive/
+
+# Local secrets (never read into context)
+.env
+.env.*
+!.env.example
+tools/users.json
+*serviceAccount*.json
+*service-account*.json

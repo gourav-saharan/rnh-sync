@@ -26,7 +26,8 @@
     "emulators": "firebase emulators:start --only auth,firestore,storage",
     "emulators:export": "firebase emulators:start --only auth,firestore,storage --import ./.emulator-data --export-on-exit ./.emulator-data",
     "test:rules": "vitest run --config tests/security-rules/vitest.config.ts",
-    "test:rules:emulated": "firebase emulators:exec --only firestore,storage \"vitest run --config tests/security-rules/vitest.config.ts\""
+    "test:rules:emulated": "firebase emulators:exec --only firestore,storage \"vitest run --config tests/security-rules/vitest.config.ts\"",
+    "test:integration:emulated": "firebase emulators:exec --only firestore \"vitest run packages/shared/src/v2data/emulator.integration.test.ts\""
   },
   "devDependencies": {
     "@firebase/rules-unit-testing": "^3.0.4",

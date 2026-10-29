@@ -12,23 +12,27 @@ import { TemplateList } from './TemplateList';
 import { TemplateStudio } from './TemplateStudio';
 import { TrashList } from './TrashList';
 import { AnalysisPage } from './AnalysisPage';
+import { sectionOf, visibleSections, type LaptopSection } from './officeRole';
 
 type Route = LaptopRoute;
 
 function Shell(): JSX.Element {
   const { user, auth } = useLaptop();
-  const home = useMemo<Route>(() => ({ name: 'tests' }), []);
+  // Tabs follow the user's roles (R1.5, R1.6); the first allowed one is home.
+  const allowed = useMemo(() => visibleSections(user), [user]);
+  const home = useMemo<Route>(() => ({ name: allowed[0] ?? 'tests' }), [allowed]);
   const [hashRoute, go] = useHashRoute(home);
-  const route = hashRoute;
+  // A pasted or bookmarked link to a section this user cannot use opens home.
+  const route: Route = allowed.includes(sectionOf(hashRoute.name)) ? hashRoute : home;
 
-  const tabs: { id: Route['name']; label: string; show: boolean }[] = [
-    { id: 'tests', label: 'Tests', show: true },
-    { id: 'analysis', label: 'Analysis', show: true },
-    { id: 'templates', label: 'Templates', show: true },
-    { id: 'trash', label: 'Trash', show: true },
-  ];
-  const section =
-    route.name === 'session' ? 'tests' : route.name === 'template' ? 'templates' : route.name;
+  const LABELS: Record<LaptopSection, string> = {
+    tests: 'Tests',
+    analysis: 'Analysis',
+    templates: 'Templates',
+    trash: 'Trash',
+  };
+  const tabs = allowed.map((id) => ({ id, label: LABELS[id], show: true }));
+  const section = sectionOf(route.name);
 
   return (
     <>
