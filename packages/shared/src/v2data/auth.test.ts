@@ -123,7 +123,7 @@ describe('rolesFromDoc', () => {
 });
 
 describe('SELF_REGISTER_ROLES', () => {
-  it('is Tester only (matches firestore.rules)', () => {
-    expect(SELF_REGISTER_ROLES).toEqual(['Tester']);
+  it('is every role, in the order firestore.rules fullAccessRoles() expects (D7)', () => {
+    expect(SELF_REGISTER_ROLES).toEqual(['Tester', 'Report_Viewer', 'Template_Admin']);
   });
 });

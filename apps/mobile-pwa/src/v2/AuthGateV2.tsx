@@ -1,5 +1,5 @@
 // Mobile_PWA v2 auth gate + sign-in (R1). Only users holding the Tester role
-// reach capture. Self-registration creates a Tester account.
+// reach capture. Every account gets full access automatically (D7).
 
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import { hasRole, type AppUser } from '@rnh/shared/v2';
@@ -60,8 +60,8 @@ function ProfileError({ auth, email }: { auth: AuthServiceV2; email: string }): 
 }
 
 /**
- * Signed in with an office-only account (e.g. one created on the laptop).
- * Instead of a dead end, offer to add the Tester role to this account.
+ * Fallback when the automatic upgrade to full access (D7) did not succeed,
+ * for example offline. Offers a one-tap retry instead of a dead end.
  */
 function EnableTester({
   auth,
@@ -79,7 +79,7 @@ function EnableTester({
     setBusy(true);
     setError(null);
     try {
-      await auth.enableTester();
+      await auth.enableFullAccess();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong. Please try again.');
       setBusy(false);
@@ -89,15 +89,14 @@ function EnableTester({
   return (
     <main className="auth-screen">
       <div className="auth-card">
-        <h1 className="auth-card__title">Use this account for testing?</h1>
+        <h1 className="auth-card__title">Finish setting up your account</h1>
         <p className="auth-note">
           {email}{' '}
           {roles.length > 0
-            ? `is set up for the office (${roles.join(', ').replace(/_/g, ' ')}), not for capturing tests on the phone.`
-            : 'has no profile yet, so it cannot capture tests.'}{' '}
-          {roles.length > 0
-            ? 'Turn on testing to rate tyres from this phone. Your office access stays the same.'
-            : 'Turn on testing to set it up as a Tester account.'}
+            ? `currently has: ${roles.join(', ').replace(/_/g, ' ')}.`
+            : 'has no profile yet.'}{' '}
+          We could not finish setting it up automatically, usually because there was no
+          connection. Tap the button to try again.
         </p>
         {error ? (
           <p role="alert" className="auth-error">
@@ -111,7 +110,7 @@ function EnableTester({
             disabled={busy}
             onClick={() => void enable()}
           >
-            {busy ? 'Please wait…' : 'Turn on testing'}
+            {busy ? 'Please wait…' : 'Set up my account'}
           </button>
           <button
             type="button"

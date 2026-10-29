@@ -1,7 +1,6 @@
 // Laptop_Web_App v2 auth gate (R1). Report_Viewer or Template_Admin may enter;
-// the shell hides what the user's roles do not allow. Self-registration only
-// ever creates a Tester account (rules enforce it); office roles are granted
-// by an administrator with tools/seed-users.mjs.
+// the shell hides what the user's roles do not allow. Every account gets full
+// access automatically on sign-up / sign-in (owner decision D7).
 
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import type { AppUser } from '@rnh/shared/v2';
@@ -43,8 +42,9 @@ export function AuthGateL({
     return (
       <BlockedL
         auth={auth}
-        title="No office access yet"
-        message={`${email} does not have the Report Viewer or Template Admin role. ${current} Ask your administrator to add an office role, then select Try again.`}
+        title="Finish setting up your account"
+        message={`${email} is not fully set up yet. ${current} This usually means there was no connection. Select Set up my account to finish.`}
+        onFix={() => auth.enableFullAccess()}
         retry
       />
     );
@@ -58,12 +58,27 @@ function BlockedL({
   title,
   message,
   retry,
+  onFix,
 }: {
   auth: AuthServiceV2;
   title: string;
   message: string;
   retry?: boolean;
+  onFix?: () => Promise<void>;
 }): JSX.Element {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const fix = async () => {
+    if (!onFix) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await onFix();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Something went wrong. Please try again.');
+      setBusy(false);
+    }
+  };
   return (
     <main className="l-auth">
       <div className="l-auth__card" role="region" aria-labelledby="l-auth-blocked-title">
@@ -71,6 +86,21 @@ function BlockedL({
         <p className="l-muted" aria-live="polite">
           {message}
         </p>
+        {error ? (
+          <p className="l-alert l-alert--error" role="alert">
+            {error}
+          </p>
+        ) : null}
+        {onFix ? (
+          <button
+            type="button"
+            className="l-btn l-btn--primary"
+            disabled={busy}
+            onClick={() => void fix()}
+          >
+            {busy ? 'Please wait…' : 'Set up my account'}
+          </button>
+        ) : null}
         {retry ? (
           <button type="button" className="l-btn l-btn--primary" onClick={() => auth.refresh()}>
             Try again
@@ -134,12 +164,6 @@ function SignInL({ auth }: { auth: AuthServiceV2 }): JSX.Element {
       >
         <h1>R&H Tyre Testing</h1>
         <p className="l-muted">Office · reports and templates</p>
-        {mode === 'up' ? (
-          <p className="l-muted">
-            New accounts start without office access. An administrator adds the Report Viewer or
-            Template Admin role.
-          </p>
-        ) : null}
         {mode === 'up' ? (
           <label className="l-field">
             <span>Your name</span>

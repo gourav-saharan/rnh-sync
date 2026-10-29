@@ -52,11 +52,18 @@ can be mixed.
 Each person opens the app that matches the role they need and clicks
 **Create account**:
 
-- Both apps register the account with roles **`["Tester"]`** only. The
-  security rules reject any other self-registered role list.
-- Office roles (`Report_Viewer`, `Template_Admin`) are granted only by an
-  administrator with the seeder (Option B). Until then the laptop app shows
-  "No office access yet".
+- **Open access (owner decision):** both apps register every new account with
+  all roles: **`["Tester", "Report_Viewer", "Template_Admin"]`**. No admin
+  approval is needed. Existing accounts with fewer roles are upgraded
+  automatically the next time they sign in.
+- **Security note:** anyone who can open the app link can create an account
+  and gets full access (read all tests, edit/delete templates, purge trash).
+  Keep the app URLs private. To lock it down later, restrict sign-up in the
+  Firebase console (Authentication > Settings > User actions) or change the
+  `users/{uid}` rules back.
+- The seeder (Option B) can still remove roles from a specific account, but
+  that account will upgrade itself again on its next sign-in while open
+  access is on.
 
 Roles are stored as a list in `users/{uid}.roles`. One person can hold several
 roles (e.g. an engineer who drives and writes the report). Multi-role accounts

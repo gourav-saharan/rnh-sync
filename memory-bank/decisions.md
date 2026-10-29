@@ -5,6 +5,13 @@ D1. Roles live only in `users/{uid}.roles`; clients never grant roles.
   Office roles via `tools/seed-users.mjs --add-role/--remove-role`. (Done Oct 2026.)
   Consequence: laptop self-sign-ups are locked out until an admin grants a role.
 
+D7 (Oct 2026, owner, SUPERSEDES D1). Open access: every account gets all roles
+  ['Tester','Report_Viewer','Template_Admin']. Sign-up writes them; resolve on sign-in
+  auto-upgrades partial/no-role accounts once (`upgradeToFullAccess` in auth.ts).
+  Rules: users/{uid} create with full list (or ['Tester'] for old clients); self-update
+  only `roles == fullAccessRoles()`. Risk accepted by owner: anyone with the link gets
+  full access. Lock-down options: disable sign-up in Firebase Auth settings, or revert rules.
+
 D2. No Cloud Functions; all access control in security rules (spec R14.1).
 
 D3. Firestore binary blobs replaced Cloud Storage for workbooks and photos

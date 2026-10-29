@@ -1,6 +1,8 @@
 // v2 Auth_Service: Firebase Auth + multi-role users/{uid} (R1.1–R1.3, R1.9).
-// No Cloud Functions: role docs are created once by self-registration (rules
-// enforce the allowed roles) or by tools/seed-users.mjs.
+// No Cloud Functions. Owner decision D7 (open access): every account gets all
+// three roles. Sign-up writes them, and an existing account with fewer roles
+// upgrades itself on sign-in (firestore.rules allow exactly that change).
+// tools/seed-users.mjs can still remove roles from a specific account.
 
 import {
   createUserWithEmailAndPassword,
@@ -25,29 +27,29 @@ export type AuthStateV2 =
 
 export interface AuthServiceV2 {
   signIn(email: string, password: string): Promise<void>;
-  /**
-   * Create an account and its `users/{uid}` doc. Self-registration always
-   * gets `roles: ['Tester']` (design "Security Rules (v2)"); office roles are
-   * granted only by tools/seed-users.mjs.
-   */
+  /** Create an account and its `users/{uid}` doc with full access (D7). */
   signUp(email: string, password: string, displayName: string): Promise<void>;
   signOut(): Promise<void>;
   subscribe(cb: (s: AuthStateV2) => void): () => void;
   /** Re-read the signed-in user's roles and notify subscribers. */
   refresh(): void;
   /**
-   * Add the Tester role to the signed-in account (the only self-service role
-   * change the rules allow), or create a Tester profile if none exists.
+   * Give the signed-in account all roles (creates the profile if missing).
+   * Runs automatically on sign-in; the apps also offer it as a button if the
+   * automatic attempt failed (for example offline).
    */
-  enableTester(): Promise<void>;
+  enableFullAccess(): Promise<void>;
 }
 
-/** The only roles a client may give itself at sign-up (enforced in firestore.rules). */
-export const SELF_REGISTER_ROLES: readonly Role[] = ['Tester'];
+/** Every role. Each account receives all of them (D7, enforced in firestore.rules). */
+export const FULL_ACCESS_ROLES: readonly Role[] = ['Tester', 'Report_Viewer', 'Template_Admin'];
 
-/** Roles list after adding Tester, or null when it is already present. */
-export function withTester(roles: readonly Role[]): Role[] | null {
-  return roles.includes('Tester') ? null : [...roles, 'Tester'];
+/** Roles written at sign-up. */
+export const SELF_REGISTER_ROLES: readonly Role[] = FULL_ACCESS_ROLES;
+
+/** True when the account already holds every role. */
+export function hasFullAccess(roles: readonly Role[]): boolean {
+  return FULL_ACCESS_ROLES.every((r) => roles.includes(r));
 }
 
 /** Roles from a user doc: v2 `roles[]`, else legacy single `role`. */
@@ -226,14 +228,31 @@ export function createAuthServiceV2(
           cb({ state: 'unauthenticated' });
           return;
         }
+        let upgraded = false;
         const tryResolve = (attempt: number): void => {
           resolveUserV2(firestore, user)
-            .then((resolved) => {
+            .then(async (resolved) => {
               if (mine !== seq) return;
-              // Brief retry for transient read failures; never grant roles.
+              // Brief retry for transient read failures.
               if (resolved.state === 'error' && attempt < 2) {
                 setTimeout(() => tryResolve(attempt + 1), 700);
                 return;
+              }
+              // D7: silently bring any account up to full access, once.
+              const partial =
+                resolved.state === 'no-role' ||
+                (resolved.state === 'authorized' && !hasFullAccess(resolved.user.roles));
+              if (partial && !upgraded) {
+                upgraded = true;
+                const ok = await upgradeToFullAccess(firestore, user).then(
+                  () => true,
+                  () => false,
+                );
+                if (mine !== seq) return;
+                if (ok) {
+                  tryResolve(attempt);
+                  return;
+                }
               }
               cb(resolved);
             })
@@ -260,36 +279,12 @@ export function createAuthServiceV2(
       for (const r of refreshers) r();
     },
 
-    async enableTester() {
+    async enableFullAccess() {
       const user = auth.currentUser;
       if (!user) throw new Error('Sign in first.');
-      const ref = doc(firestore, 'users', user.uid);
       try {
-        const snap = await getDoc(ref);
-        if (!snap.exists()) {
-          const name = user.displayName || user.email || '';
-          const userDoc: UserDoc = {
-            uid: user.uid,
-            email: user.email ?? '',
-            displayName: name,
-            roles: ['Tester'],
-            createdAt: Date.now(),
-          };
-          await setDoc(ref, userDoc);
-        } else {
-          const raw = (snap.data() as Record<string, unknown>).roles;
-          if (!Array.isArray(raw)) {
-            throw new Error(
-              'This account still uses the old role format. Ask your administrator to run the v2 migration.',
-            );
-          }
-          const next = withTester(
-            raw.filter((r): r is Role => (ALL_ROLES as readonly unknown[]).includes(r)),
-          );
-          if (next && next.length === raw.length + 1) await updateDoc(ref, { roles: next });
-        }
+        await upgradeToFullAccess(firestore, user);
       } catch (cause) {
-        if (cause instanceof Error && cause.message.startsWith('This account')) throw cause;
         const code =
           typeof cause === 'object' && cause && 'code' in cause
             ? String((cause as { code: unknown }).code)
@@ -303,4 +298,29 @@ export function createAuthServiceV2(
       this.refresh();
     },
   };
+}
+
+/**
+ * Give an account every role (D7). Creates the profile when it is missing,
+ * otherwise replaces `roles` with the full list. firestore.rules allow exactly
+ * this write on the user's own document and nothing else.
+ */
+export async function upgradeToFullAccess(
+  firestore: Firestore,
+  user: Pick<User, 'uid' | 'email' | 'displayName'>,
+): Promise<void> {
+  const ref = doc(firestore, 'users', user.uid);
+  const snap = await getDoc(ref);
+  if (!snap.exists()) {
+    const userDoc: UserDoc = {
+      uid: user.uid,
+      email: user.email ?? '',
+      displayName: user.displayName || user.email || '',
+      roles: [...FULL_ACCESS_ROLES],
+      createdAt: Date.now(),
+    };
+    await setDoc(ref, userDoc);
+    return;
+  }
+  await updateDoc(ref, { roles: [...FULL_ACCESS_ROLES] });
 }

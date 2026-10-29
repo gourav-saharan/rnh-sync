@@ -1,9 +1,10 @@
-// AuthGateV2: office-only accounts get a "Turn on testing" path instead of a
-// dead end, and a profile read failure offers Try again (not "no access").
+// AuthGateV2: accounts that are not fully set up yet (automatic upgrade failed)
+// get a one-tap "Set up my account" instead of a dead end, and a profile read
+// failure offers Try again (not "no access").
 import { describe, expect, it, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import type { AuthServiceV2, AuthStateV2 } from '@rnh/shared/v2data';
-import { withTester } from '@rnh/shared/v2data';
+import { hasFullAccess } from '@rnh/shared/v2data';
 import { AuthGateV2 } from './AuthGateV2';
 
 function fakeAuth(state: AuthStateV2, over: Partial<AuthServiceV2> = {}): AuthServiceV2 {
@@ -16,7 +17,7 @@ function fakeAuth(state: AuthStateV2, over: Partial<AuthServiceV2> = {}): AuthSe
       return () => {};
     },
     refresh: vi.fn(),
-    enableTester: vi.fn(async () => {}),
+    enableFullAccess: vi.fn(async () => {}),
     ...over,
   };
 }
@@ -32,25 +33,25 @@ const office: AuthStateV2 = {
 };
 
 describe('AuthGateV2', () => {
-  it('offers to turn on testing for an office-only account', async () => {
+  it('offers one-tap set-up when an account is not fully set up', async () => {
     const auth = fakeAuth(office);
     render(<AuthGateV2 authService={auth}>{() => <p>capture</p>}</AuthGateV2>);
     expect(
-      screen.getByRole('heading', { name: 'Use this account for testing?' }),
+      screen.getByRole('heading', { name: 'Finish setting up your account' }),
     ).toBeInTheDocument();
     expect(screen.queryByText('capture')).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Turn on testing' }));
-    expect(auth.enableTester).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByRole('button', { name: 'Set up my account' }));
+    expect(auth.enableFullAccess).toHaveBeenCalledTimes(1);
   });
 
-  it('shows the error from enableTester', async () => {
+  it('shows the error from enableFullAccess', async () => {
     const auth = fakeAuth(office, {
-      enableTester: vi.fn(async () => {
+      enableFullAccess: vi.fn(async () => {
         throw new Error('The server refused the change.');
       }),
     });
     render(<AuthGateV2 authService={auth}>{() => <p>capture</p>}</AuthGateV2>);
-    fireEvent.click(screen.getByRole('button', { name: 'Turn on testing' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Set up my account' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('The server refused the change.');
   });
 
@@ -116,9 +117,11 @@ describe('SignInV2 UX', () => {
   });
 });
 
-describe('withTester', () => {
-  it('adds Tester once', () => {
-    expect(withTester(['Report_Viewer'])).toEqual(['Report_Viewer', 'Tester']);
-    expect(withTester(['Tester', 'Report_Viewer'])).toBeNull();
+describe('hasFullAccess', () => {
+  it('is true only when every role is held', () => {
+    expect(hasFullAccess(['Tester', 'Report_Viewer', 'Template_Admin'])).toBe(true);
+    expect(hasFullAccess(['Template_Admin', 'Tester', 'Report_Viewer'])).toBe(true);
+    expect(hasFullAccess(['Tester', 'Report_Viewer'])).toBe(false);
+    expect(hasFullAccess([])).toBe(false);
   });
 });

@@ -263,7 +263,7 @@ describe('v2 self-registration with a roles list (R1.3, R14.4)', () => {
     );
   });
 
-  it('rejects empty, unknown or oversized role lists', async () => {
+  it('rejects empty or unknown role lists', async () => {
     await assertFails(db(NEW).doc(`users/${NEW}`).set(doc([])));
     await assertFails(
       db(NEW)
@@ -273,51 +273,55 @@ describe('v2 self-registration with a roles list (R1.3, R14.4)', () => {
     await assertFails(
       db(NEW)
         .doc(`users/${NEW}`)
+        .set(doc(['Tester', 'Report_Viewer', 'Template_Admin', 'Superuser'])),
+    );
+  });
+
+  // Owner decision D7: open access, every account may hold every role.
+  it('accepts self-registration with full access (D7)', async () => {
+    await assertSucceeds(
+      db(NEW)
+        .doc(`users/${NEW}`)
         .set(doc(['Tester', 'Report_Viewer', 'Template_Admin'])),
     );
   });
 
-  it('cannot add roles to an existing account', async () => {
+  it('an existing account may upgrade itself to full access (D7)', async () => {
+    await assertSucceeds(
+      db(TESTER)
+        .doc(`users/${TESTER}`)
+        .update({ roles: ['Tester', 'Report_Viewer', 'Template_Admin'] }),
+    );
+  });
+
+  it('a self-update must set exactly the full list and touch nothing else', async () => {
+    // Partial lists are refused.
     await assertFails(
       db(TESTER)
         .doc(`users/${TESTER}`)
         .update({ roles: ['Tester', 'Template_Admin'] }),
     );
-  });
-
-  it('an office account may add only the Tester role to itself', async () => {
-    await assertSucceeds(
+    await assertFails(
       db(VIEWER)
         .doc(`users/${VIEWER}`)
         .update({ roles: ['Report_Viewer', 'Tester'] }),
     );
-  });
-
-  it('adding Tester cannot smuggle other roles or fields, or touch other users', async () => {
+    // Unknown roles or other fields are refused.
     await assertFails(
       db(VIEWER)
         .doc(`users/${VIEWER}`)
-        .update({ roles: ['Report_Viewer', 'Tester', 'Template_Admin'] }),
+        .update({ roles: ['Tester', 'Report_Viewer', 'Template_Admin', 'Superuser'] }),
     );
     await assertFails(
       db(VIEWER)
         .doc(`users/${VIEWER}`)
-        .update({ roles: ['Tester'] }),
+        .update({ roles: ['Tester', 'Report_Viewer', 'Template_Admin'], email: 'x@y.z' }),
     );
-    await assertFails(
-      db(VIEWER)
-        .doc(`users/${VIEWER}`)
-        .update({ roles: ['Report_Viewer', 'Tester'], email: 'x@y.z' }),
-    );
+    // Never on someone else's profile.
     await assertFails(
       db(ADMIN)
         .doc(`users/${VIEWER}`)
-        .update({ roles: ['Report_Viewer', 'Tester'] }),
-    );
-    await assertFails(
-      db(TESTER)
-        .doc(`users/${TESTER}`)
-        .update({ roles: ['Tester', 'Tester'] }),
+        .update({ roles: ['Tester', 'Report_Viewer', 'Template_Admin'] }),
     );
   });
 });

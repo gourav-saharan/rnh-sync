@@ -16,7 +16,7 @@ function fakeAuth(state: AuthStateV2): AuthServiceV2 {
       return () => {};
     },
     refresh: vi.fn(),
-    enableTester: vi.fn(async () => {}),
+    enableFullAccess: vi.fn(async () => {}),
   };
 }
 
@@ -34,13 +34,18 @@ describe('AuthGateL', () => {
     expect(screen.getByText('shell Report_Viewer')).toBeInTheDocument();
   });
 
-  it('blocks a Tester-only account', () => {
-    renderGate(fakeAuth(user(['Tester'])));
-    expect(screen.getByRole('heading', { name: 'No office access yet' })).toBeInTheDocument();
+  it('a Tester-only account (upgrade not done yet) gets a one-tap set-up', () => {
+    const auth = fakeAuth(user(['Tester']));
+    renderGate(auth);
+    expect(
+      screen.getByRole('heading', { name: 'Finish setting up your account' }),
+    ).toBeInTheDocument();
     expect(screen.queryByText(/^shell/)).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Set up my account' }));
+    expect(auth.enableFullAccess).toHaveBeenCalledTimes(1);
   });
 
-  it('blocks a no-role account and offers Try again', () => {
+  it('a no-role account does not reach the shell and offers Try again', () => {
     const auth = fakeAuth({ state: 'no-role', uid: 'u1', email: 'u1@example.com' });
     renderGate(auth);
     expect(screen.queryByText(/^shell/)).not.toBeInTheDocument();
@@ -56,7 +61,7 @@ describe('AuthGateL', () => {
     expect(screen.queryByText(/^shell/)).not.toBeInTheDocument();
   });
 
-  it('sign-up passes no roles (the service always registers as Tester)', async () => {
+  it('sign-up passes no roles (the service always grants full access)', async () => {
     const auth = fakeAuth({ state: 'unauthenticated' });
     renderGate(auth);
     fireEvent.click(screen.getByRole('button', { name: 'Create an account' }));

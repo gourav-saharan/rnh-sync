@@ -3,8 +3,8 @@ rules_version = '2';
 // Firestore security rules for the R&H Tyre Testing System.
 //
 // Role model (v2): users/{uid}.roles is a list of 'Tester' | 'Report_Viewer'
-// | 'Template_Admin' (one user may hold several, R1.3). Self-registration
-// creates only ['Tester']; office roles come from tools/seed-users.mjs.
+// | 'Template_Admin' (one user may hold several, R1.3). Open access (owner
+// decision D7): every signed-in user may give their own account all roles.
 //
 // Summary (full role x path x operation matrix:
 // tests/security-rules/securityRulesMatrix.test.ts):
@@ -55,6 +55,8 @@ service cloud.firestore {
         && userDoc().get('role', '') == 'Report_Viewer';
     }
     function isTemplateAdmin() { return hasRole('Template_Admin') || isLegacyViewer(); }
+    // Every role, in the order the apps write it (packages/shared/src/v2data/auth.ts).
+    function fullAccessRoles() { return ['Tester', 'Report_Viewer', 'Template_Admin']; }
     function hasAnyRole() { return isTester() || isReportViewer() || isTemplateAdmin(); }
 
     // 30-day trash window (R13.2); deletedAt is epoch ms.
@@ -70,35 +72,28 @@ service cloud.firestore {
     }
 
     // --- users/{uid} -------------------------------------------------------
-    // Read own profile. Self-registration may create the OWN doc once with
-    // `roles == ['Tester']` only. Report_Viewer, Template_Admin and
-    // multi-role grants come only from tools/seed-users.mjs (Admin SDK).
-    // The only self-service change afterwards is adding Tester (below).
+    // Read own profile. Open access (owner decision D7): a user may create
+    // their OWN doc with every role, and later set their own `roles` to the
+    // full list. Nothing else on the profile can be changed by clients.
     match /users/{uid} {
       // Own profile; Report_Viewers may also list the team to assign testers.
       allow read: if isSignedIn() && (request.auth.uid == uid || isReportViewer());
       allow create: if isSignedIn()
         && request.auth.uid == uid
         && request.resource.data.uid == uid
-        // Self-registration is Tester only (design "Security Rules (v2)").
-        // Office roles come only from tools/seed-users.mjs (Admin SDK).
         // No legacy `role` field: hasRole() also honours it, so allowing it
         // here would let a client smuggle in Report_Viewer.
         && request.resource.data.keys().hasOnly(['uid', 'email', 'displayName', 'roles', 'createdAt'])
-        && request.resource.data.roles == ['Tester'];
-      // The only self-service change: an existing account may add the Tester
-      // role to itself (so an office account can also capture on the phone).
-      // Tester is the lowest role and self-sign-up already grants it, so this
-      // is not an escalation. Every other field and every other role is fixed.
+        // Owner decision D7 (open access): sign-up gets every role. ['Tester']
+        // is still accepted so an older cached app version can sign up.
+        && (request.resource.data.roles == fullAccessRoles()
+          || request.resource.data.roles == ['Tester']);
+      // D7: the only self-service change is setting `roles` to the full list
+      // (the apps do this automatically on sign-in). No other field changes.
       allow update: if isSignedIn()
         && request.auth.uid == uid
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['roles'])
-        && resource.data.get('roles', null) is list
-        && !('Tester' in resource.data.roles)
-        && request.resource.data.roles is list
-        && request.resource.data.roles.hasAll(resource.data.roles)
-        && request.resource.data.roles.size() == resource.data.roles.size() + 1
-        && 'Tester' in request.resource.data.roles;
+        && request.resource.data.roles == fullAccessRoles();
       allow delete: if false;
     }
 

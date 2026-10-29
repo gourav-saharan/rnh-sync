@@ -158,12 +158,19 @@ const userRows: Row<Db>[] = [
     run: (db, uid) => db.doc(`users/${uid}`).set(profile(uid, ['Template_Admin'])) },
   { name: 'users: create a profile for another uid', allow: [],
     run: (db) => db.doc('users/m-forged').set(profile('m-forged', ['Tester'])) },
-  // design: "never from clients". Rules allow an office account to add only
-  // Tester to itself (phone "Turn on testing").
-  { name: 'users: Report_Viewer adds Tester to itself', allow: ['viewer'],
+  // Owner decision D7 (open access): sign-up and self-upgrade to every role.
+  { name: 'users: self-register with full access', allow: ['none'],
+    run: (db, uid) =>
+      db.doc(`users/${uid}`).set(profile(uid, ['Tester', 'Report_Viewer', 'Template_Admin'])) },
+  { name: 'users: set own roles to a partial list', allow: [],
     run: (db, uid) =>
       db.doc(`users/${uid}`).set({ roles: ['Report_Viewer', 'Tester'] }, { merge: true }) },
-  { name: 'users: grant self every role', allow: [],
+  { name: "users: change someone else's roles", allow: [],
+    run: (db) =>
+      db
+        .doc(`users/${OTHER}`)
+        .set({ roles: ['Tester', 'Report_Viewer', 'Template_Admin'] }, { merge: true }) },
+  { name: 'users: grant self every role', allow: ['tester', 'viewer', 'admin'],
     run: (db, uid) =>
       db
         .doc(`users/${uid}`)
