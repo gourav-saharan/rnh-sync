@@ -4,7 +4,6 @@
 >
 > **Platform constraints (confirmed):** Firebase is used only for Auth, Firestore, and Cloud Storage. **No Cloud Functions** (no triggers, no scheduled jobs, no callable functions). Everything a server job would normally do (role changes, migration, permanent trash deletion) runs either in the client under security rules or as a local Admin SDK script in `tools/`. No git workflow is assumed.
 
-## Overview
 
 The system captures a **Rating_Matrix** (R&H_Parameters × Tyre_Sets, with a rating and comment per cell) on an offline-first Mobile_PWA. It syncs through Firebase and fills the customer's own Excel workbook on the Laptop_Web_App.
 
